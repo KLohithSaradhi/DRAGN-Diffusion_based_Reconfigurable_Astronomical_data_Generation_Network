@@ -1,0 +1,22 @@
+run_name: "3_32_64_128_128ae"
+stage: "ae"
+output_dir: "./results"
+
+data:
+  dataset_type: "astro"
+  root_dir: "/mnt/g/Lohith/Astronomy/Lensing_detection_data/SDSS"
+  condition: ""
+  batch_size: 32
+
+training:
+  epochs: 100
+  lr: 0.0001
+  save_freq: 10
+  loss_type: "mse"
+
+autoencoder:
+  channels: [3, 32, 64, 128, 128]
+  kernels: [4, 4, 4, 4]
+  strides: [2, 2, 2, 2]
+  paddings: [1, 1, 1, 1]
+  out_paddings: [0, 0, 0, 0]

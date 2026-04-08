@@ -1,0 +1,36 @@
+autoencoder:
+  channels:
+  - 3
+  - 32
+  - 64
+  - 128
+  - 128
+  kernels:
+  - 4
+  - 4
+  - 4
+  - 4
+  strides:
+  - 2
+  - 2
+  - 2
+  - 2
+  paddings:
+  - 1
+  - 1
+  - 1
+  - 1
+  out_paddings:
+  - 0
+  - 0
+  - 0
+  - 0
+diffusion:
+  in_channels: 128
+  latent_size: 32
+  patch_size: 2
+  hidden_dim: 512
+  num_heads: 8
+  depth: 2
+schedule: cosine
+timesteps: 1000
