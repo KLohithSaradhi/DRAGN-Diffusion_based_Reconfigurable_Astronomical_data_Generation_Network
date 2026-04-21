@@ -8,27 +8,24 @@ from model import LatentDiffusionModel
 from diff import DDPMScheduler, NoiseSchedules
 from lora import LoRAManager
 from loss import LossFactory
-from utils import get_device
+from utils import get_device, save_images  # Added save_images
 
 def setup_workspace(yaml_path):
     with open(yaml_path, 'r') as f: config = yaml.safe_load(f)
     out_dir = Path(config["output_dir"]) / config["run_name"]
     out_dir.mkdir(parents=True, exist_ok=True)
     
+    # Create the samples directory
+    (out_dir / "samples").mkdir(parents=True, exist_ok=True)
+    
     stage = config.get("stage", "bb")
+    inf_config = {"autoencoder": config["autoencoder"]}
     
-    # Base inference config always has the Autoencoder
-    inf_config = {
-        "autoencoder": config["autoencoder"],
-    }
-    
-    # Only add diffusion math if we are past stage 1
     if stage in ["bb", "lora"]:
         inf_config["diffusion"] = config["diffusion"]
         inf_config["schedule"] = config["training"]["schedule"]
         inf_config["timesteps"] = config["training"]["timesteps"]
         
-    # Only add LoRA rank if we are doing LoRA
     if stage == "lora": 
         inf_config["lora_rank"] = config["lora"]["rank"]
         
@@ -37,6 +34,11 @@ def setup_workspace(yaml_path):
 
 def train_autoencoder(ae, loader, cfg, out_dir, dev):
     opt = torch.optim.AdamW(ae.parameters(), lr=float(cfg["training"]["lr"]))
+
+    fixed_images, _ = next(iter(loader))
+    fixed_images = fixed_images[:8].to(dev)
+
+
     for epoch in range(cfg["training"]["epochs"]):
         ae.train()
         pbar = tqdm(loader, desc=f"AE Ep {epoch+1}")
@@ -44,15 +46,34 @@ def train_autoencoder(ae, loader, cfg, out_dir, dev):
             images = images.to(dev)
             opt.zero_grad()
             recon, _ = ae(images)
-            # You can also use crit here if you want huber/l1 for AE!
             loss = F.mse_loss(recon, images) 
             loss.backward()
             opt.step()
             pbar.set_postfix(loss=loss.item())
+        if (epoch + 1) % cfg["training"].get("sample_freq", 1) == 0:
+            print(f"\nGenerating AE reconstruction samples for epoch {epoch+1}...")
+            ae.eval() # Turn off BatchNorm/Dropout for clean inference
+            with torch.no_grad():
+                fixed_recons, _ = ae(fixed_images)
+            
+            # Stack the original images on top of the reconstructions
+            # Shape goes from (8, C, H, W) to (16, C, H, W)
+            comparison_grid = torch.cat([fixed_images, fixed_recons], dim=0)
+            
+            # nrow=8 forces the layout: Top row is 8 originals, Bottom row is 8 recons
+            save_path = out_dir / "samples" / f"ae_epoch_{epoch+1}.png"
+            save_images(comparison_grid, save_path, nrow=8)
         torch.save(ae.state_dict(), out_dir / "ae_weights.pth")
 
 def train_backbone(ldm, loader, sched, crit, cfg, out_dir, dev):
     opt = torch.optim.AdamW(ldm.unet.parameters(), lr=float(cfg["training"]["lr"]))
+    
+    # Define sampling shape (e.g., a 4x4 grid)
+    sample_n = 16
+    latent_size = cfg["diffusion"]["latent_size"]
+    in_channels = cfg["diffusion"]["in_channels"]
+    latent_shape = (sample_n, in_channels, latent_size, latent_size)
+
     for epoch in range(cfg["training"]["epochs"]):
         ldm.train()
         pbar = tqdm(loader, desc=f"BB Ep {epoch+1}")
@@ -63,11 +84,25 @@ def train_backbone(ldm, loader, sched, crit, cfg, out_dir, dev):
             loss.backward()
             opt.step()
             pbar.set_postfix(loss=loss.item())
+
+        # Periodically sample images
+        if (epoch + 1) % cfg["training"].get("sample_freq", 1) == 0:
+            print(f"\nGenerating samples for epoch {epoch+1}...")
+            samples = ldm.sample_images(sched, latent_shape)
+            save_images(samples, out_dir / "samples" / f"epoch_{epoch+1}.png", nrow=4)
+
         torch.save(ldm.unet.state_dict(), out_dir / "bb_weights.pth")
 
 def train_lora(ldm, loader, sched, crit, cfg, out_dir, dev):
     params = [p for p in ldm.parameters() if p.requires_grad]
     opt = torch.optim.AdamW(params, lr=float(cfg["training"]["lr"]))
+    
+    # Define sampling shape
+    sample_n = 16
+    latent_size = cfg["diffusion"]["latent_size"]
+    in_channels = cfg["diffusion"]["in_channels"]
+    latent_shape = (sample_n, in_channels, latent_size, latent_size)
+
     for epoch in range(cfg["training"]["epochs"]):
         ldm.train()
         pbar = tqdm(loader, desc=f"LoRA Ep {epoch+1}")
@@ -78,7 +113,15 @@ def train_lora(ldm, loader, sched, crit, cfg, out_dir, dev):
             loss.backward()
             opt.step()
             pbar.set_postfix(loss=loss.item())
+
+        # Periodically sample images
+        if (epoch + 1) % cfg["training"].get("sample_freq", 1) == 0:
+            print(f"\nGenerating samples for epoch {epoch+1}...")
+            samples = ldm.sample_images(sched, latent_shape)
+            save_images(samples, out_dir / "samples" / f"epoch_{epoch+1}.png", nrow=4)
+
         LoRAManager.save_weights(ldm.unet, out_dir / "lora_weights.pth")
+
 
 def main():
     parser = argparse.ArgumentParser()

@@ -1,4 +1,8 @@
 reference_scripts/*
+*.jpg
+*.pth
+*.png
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

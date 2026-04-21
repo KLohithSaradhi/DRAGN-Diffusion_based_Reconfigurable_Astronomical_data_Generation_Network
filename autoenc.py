@@ -11,6 +11,8 @@ class Encoder(nn.Module):
             if i < len(channels) - 2: 
                 layers.append(nn.BatchNorm2d(channels[i+1]))
                 layers.append(self.act)
+            else:
+                layers.append(nn.Tanh())
         self.net = nn.Sequential(*layers)
     def forward(self, x): return self.net(x)
 

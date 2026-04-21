@@ -12,8 +12,8 @@ class TransformerDiffusionBlock(nn.Module):
         self.mlp = nn.Sequential(nn.Linear(hidden_dim, hidden_dim * 4), nn.GELU(), nn.Linear(hidden_dim * 4, hidden_dim))
 
     def forward(self, x, t_emb):
-        x_time = x + t_emb.unsqueeze(1) 
-        norm_x = self.norm1(x_time)
+        x = x + t_emb.unsqueeze(1) 
+        norm_x = self.norm1(x)
         attn_out, _ = self.attn(norm_x, norm_x, norm_x)
         x = x + attn_out
         return x + self.mlp(self.norm2(x))
@@ -29,11 +29,18 @@ class DiffusionTransformer(nn.Module):
         
         self.patch_embed = nn.Linear(patch_dim, self.hidden_dim)
         self.pos_embed = nn.Parameter(torch.zeros(1, self.num_patches, self.hidden_dim))
+
+        nn.init.trunc_normal_(self.pos_embed, std=0.02)
+
         self.time_mlp = nn.Sequential(SinusoidalTimeEmbedding(self.hidden_dim), nn.Linear(self.hidden_dim, self.hidden_dim), nn.GELU(), nn.Linear(self.hidden_dim, self.hidden_dim))
         
         self.blocks = nn.ModuleList([TransformerDiffusionBlock(self.hidden_dim, self.num_heads) for _ in range(self.depth)])
         self.norm_out = nn.LayerNorm(self.hidden_dim)
         self.decoder_pred = nn.Linear(self.hidden_dim, patch_dim)
+
+        ## LEARNT FROM STABLE DIFFUSION
+        nn.init.zeros_(self.decoder_pred.weight)
+        nn.init.zeros_(self.decoder_pred.bias)
 
     def patchify(self, x):
         B, C, H, W = x.shape
