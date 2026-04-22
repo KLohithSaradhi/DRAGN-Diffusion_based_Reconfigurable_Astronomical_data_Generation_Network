@@ -30,7 +30,6 @@ autoencoder:
 diffusion:
   in_channels: 128
   latent_size: 32
-  patch_size: 2
   hidden_dim: 512
   num_heads: 8
   depth: 8

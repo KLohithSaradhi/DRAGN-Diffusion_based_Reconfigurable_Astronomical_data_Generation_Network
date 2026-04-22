@@ -9,7 +9,7 @@ data:
   dataset_type: "astro"
   root_dir: "/mnt/g/Lohith/Astronomy/Lensing_detection_data/SDSS"
   condition: ""
-  batch_size: 64
+  batch_size: 32
 
 training:
   epochs: 600
