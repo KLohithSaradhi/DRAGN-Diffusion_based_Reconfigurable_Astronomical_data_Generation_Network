@@ -19,8 +19,17 @@ def setup_workspace(yaml_path):
     (out_dir / "samples").mkdir(parents=True, exist_ok=True)
     
     stage = config.get("stage", "bb")
-    inf_config = {"autoencoder": config["autoencoder"]}
+    inf_config = {}
     
+    # Check if we are actively using an Autoencoder (either training it, or loading its weights)
+    ae_path = config.get("weights", {}).get("ae_base", "")
+    if stage == "ae" or ae_path:
+        inf_config["use_ae"] = True
+        inf_config["autoencoder"] = config.get("autoencoder", {})
+    else:
+        # Bypassing the AE (Pixel-Space Diffusion)
+        inf_config["use_ae"] = False
+        
     if stage in ["bb", "lora"]:
         inf_config["diffusion"] = config["diffusion"]
         inf_config["schedule"] = config["training"]["schedule"]
@@ -133,26 +142,35 @@ def main():
     loader = DataFactory.create_loader(cfg)
     crit = LossFactory.get_loss(cfg["training"])
 
-    # 1. ALWAYS initialize the Autoencoder
-    ae = Autoencoder(cfg["autoencoder"]).to(dev)
+    ae_path = cfg.get("weights", {}).get("ae_base", "")
 
-    # 2. ROUTING LOGIC
+    
+
     if cfg["stage"] == "ae":
+        ae = Autoencoder(cfg["autoencoder"]).to(dev)
         # Run AE without touching diffusion elements
         train_autoencoder(ae, loader, cfg, out_dir, dev)
         
     elif cfg["stage"] in ["bb", "lora"]:
+        if ae_path:
+            print(f"Loading Autoencoder from {ae_path}...")
+            ae = Autoencoder(cfg["autoencoder"]).to(dev)
+            ae.load_state_dict(torch.load(ae_path, map_location=dev))
+            # CRITICAL: Freeze the AE so BB training doesn't destroy its weights!
+            for p in ae.parameters(): p.requires_grad = False
+            ae.eval()
+        else:
+            print("No AE path provided. Bypassing AE (Pixel-Space Diffusion).")
+            ae = None
         # We need diffusion components now!
         bb = DiffusionTransformer(cfg["diffusion"]).to(dev)
         ldm = LatentDiffusionModel(ae, bb).to(dev)
         sched = DDPMScheduler(betas=getattr(NoiseSchedules, cfg["training"]["schedule"])(cfg["training"]["timesteps"]), device=dev)
         
         if cfg["stage"] == "bb":
-            ldm.ae.load_state_dict(torch.load(cfg['weights']['ae_base'], map_location=dev))
             train_backbone(ldm, loader, sched, crit, cfg, out_dir, dev)
             
         elif cfg["stage"] == "lora":
-            ldm.ae.load_state_dict(torch.load(cfg['weights']['ae_base'], map_location=dev))
             ldm.unet.load_state_dict(torch.load(cfg['weights']['bb_base'], map_location=dev))
             for p in ldm.unet.parameters(): p.requires_grad = False
             

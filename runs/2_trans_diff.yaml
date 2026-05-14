@@ -1,4 +1,4 @@
-run_name: "2_trans_diff"
+run_name: "2_trans_diff_mse"
 stage: "bb"
 output_dir: "./results"
 
@@ -12,14 +12,13 @@ data:
   batch_size: 32
 
 training:
-  epochs: 600
+  epochs: 200
   lr: 0.0001
   save_freq: 10
   sample_freq: 1
   timesteps: 1000
-  schedule: "cosine"
-  loss_type: "huber"
-  huber_delta: 1.0
+  schedule: "linear"
+  loss_type: "mse"
 
 autoencoder:
   channels: [3, 32, 64, 128, 128]
@@ -31,7 +30,6 @@ autoencoder:
 diffusion:
   in_channels: 128
   latent_size: 32
-  patch_size: 2
-  hidden_dim: 512
+  hidden_dim: 256
   num_heads: 8
   depth: 2

@@ -1,0 +1,36 @@
+run_name: "1_trans_diff"
+stage: "bb"
+output_dir: "./results"
+
+weights:
+  ae_base: "./results/3_32_64_128_128ae/ae_weights.pth" 
+
+data:
+  dataset_type: "astro"
+  root_dir: "/mnt/g/Lohith/Astronomy/Lensing_detection_data/SDSS"
+  condition: ""
+  batch_size: 32
+
+training:
+  epochs: 600
+  lr: 0.0001
+  save_freq: 10
+  sample_freq: 1
+  timesteps: 1000
+  schedule: "cosine"
+  loss_type: "huber"
+  huber_delta: 1.0
+
+autoencoder:
+  channels: [3, 32, 64, 128, 128]
+  kernels: [4, 4, 4, 4]
+  strides: [2, 2, 2, 2]
+  paddings: [1, 1, 1, 1]
+  out_paddings: [0, 0, 0, 0]
+
+diffusion:
+  in_channels: 128
+  latent_size: 32
+  hidden_dim: 512
+  num_heads: 8
+  depth: 1

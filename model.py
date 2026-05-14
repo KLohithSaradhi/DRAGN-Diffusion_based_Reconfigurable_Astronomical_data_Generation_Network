@@ -7,14 +7,19 @@ class LatentDiffusionModel(nn.Module):
         super().__init__()
         self.ae = autoencoder
         self.unet = unet
-        for p in self.ae.parameters(): p.requires_grad = False
-        self.ae.eval()
+        if self.ae is not None:
+            for p in self.ae.parameters(): p.requires_grad = False
+            self.ae.eval()
 
     @torch.no_grad()
-    def encode(self, images): return self.ae.encoder(images)
+    def encode(self, images): 
+        if self.ae == None: return images
+        return self.ae.encoder(images)
 
     @torch.no_grad()
-    def decode(self, latents): return self.ae.decoder(latents)
+    def decode(self, latents): 
+        if self.ae == None: return latents
+        return self.ae.decoder(latents)
 
     def forward(self, noisy_latents, t): return self.unet(noisy_latents, t)
 

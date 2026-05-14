@@ -1,0 +1,27 @@
+run_name: "mnist_bb"
+stage: "bb"
+output_dir: "./results"
+ 
+
+data:
+  dataset_type: "mnist"
+  root_dir: "./"
+  condition: ""
+  batch_size: 48
+
+training:
+  epochs: 200
+  lr: 0.0001
+  save_freq: 10
+  timesteps: 1000
+  schedule: "linear"
+  loss_type: "mse"
+  huber_delta: 1.0
+
+
+diffusion:
+  in_channels: 1
+  latent_size: 32
+  hidden_dim: 128
+  num_heads: 8
+  depth: 2

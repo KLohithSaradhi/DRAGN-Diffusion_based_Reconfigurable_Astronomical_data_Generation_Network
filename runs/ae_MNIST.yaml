@@ -1,0 +1,22 @@
+run_name: "mnist_ae"
+stage: "ae"
+output_dir: "./results"
+
+data:
+  dataset_type: "mnist"
+  root_dir: "./"
+  condition: ""
+  batch_size: 1024
+
+training:
+  epochs: 50
+  lr: 0.01
+  save_freq: 10
+  loss_type: "mse"
+
+autoencoder:
+  channels: [1,1]
+  kernels: [1,1]
+  strides: [1,1]
+  paddings: [0,0]
+  out_paddings: [0,0]

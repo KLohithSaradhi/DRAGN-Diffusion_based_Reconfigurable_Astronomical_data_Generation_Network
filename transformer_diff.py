@@ -2,39 +2,46 @@ import torch
 import torch.nn as nn
 from utils import SinusoidalTimeEmbedding
 
-class AttentionBlock(nn.Module):
-    def __init__(self, channels, num_heads, time_emb_dim):
+class ResidualBlock(nn.Module):
+    def __init__(self, in_channels, out_channels, time_emb_dim):
         super().__init__()
-        self.norm = nn.GroupNorm(8, channels)
-        
-        # Time injection mimicking your AstroUNet ResidualBlock
+        self.conv1 = nn.Sequential(
+            nn.GroupNorm(8, in_channels),
+            nn.SiLU(),
+            nn.Conv2d(in_channels, out_channels, 3, padding=1)
+        )
         self.time_mlp = nn.Sequential(
             nn.SiLU(),
-            nn.Linear(time_emb_dim, channels)
+            nn.Linear(time_emb_dim, out_channels)
         )
-        
+        self.conv2 = nn.Sequential(
+            nn.GroupNorm(8, out_channels),
+            nn.SiLU(),
+            nn.Conv2d(out_channels, out_channels, 3, padding=1)
+        )
+        self.residual_conv = nn.Identity() if in_channels == out_channels else \
+                             nn.Conv2d(in_channels, out_channels, 1)
+
+    def forward(self, x, t):
+        h = self.conv1(x)
+        t_emb = self.time_mlp(t)[:, :, None, None]
+        h = h + t_emb
+        h = self.conv2(h)
+        return h + self.residual_conv(x)
+
+class AttentionBlock(nn.Module):
+    def __init__(self, channels, num_heads):
+        super().__init__()
+        self.norm = nn.GroupNorm(8, channels)
         self.attn = nn.MultiheadAttention(embed_dim=channels, num_heads=num_heads, batch_first=True)
-        
-        # Kept the 1x1 conv exactly as requested
         self.proj_out = nn.Conv2d(channels, channels, 1)
 
-    def forward(self, x, t_emb):
+    def forward(self, x):
         B, C, H, W = x.shape
         h = self.norm(x)
-        
-        # Process and inject time embedding into the spatial grid
-        t_add = self.time_mlp(t_emb)[:, :, None, None]
-        h = h + t_add
-        
-        # Flatten spatial dimensions into a sequence for Attention: (B, Seq, C)
         h = h.permute(0, 2, 3, 1).reshape(B, H * W, C)
-        
         attn_output, _ = self.attn(h, h, h)
-        
-        # Reshape sequence back to spatial grid: (B, C, H, W)
         attn_output = attn_output.reshape(B, H, W, C).permute(0, 3, 1, 2)
-        
-        # Apply the final 1x1 conv and residual connection
         return x + self.proj_out(attn_output)
 
 
@@ -42,53 +49,94 @@ class DiffusionTransformer(nn.Module):
     def __init__(self, config):
         super().__init__()
         
-        # Unpack dynamic config parameters (No hardcoding)
+        # --- Parameter Parsing from your Config ---
         in_channels = config["in_channels"]
-        hidden_dim = config["hidden_dim"]
+        base_channels = config["hidden_dim"]  # Maps config's hidden_dim to U-Net base_channels
         num_heads = config["num_heads"]
-        depth = config["depth"]
-        self.latent_size = config.get("latent_size", 32) # Extracted but architecture naturally adapts
+        depth = config["depth"]               # Controls the number of Attention Blocks
+        ch_multis = config.get("ch_multis", [1, 2, 4]) # Defaults to standard multipliers if not explicitly in config
         
-        time_emb_dim = hidden_dim * 4
+        time_emb_dim = base_channels * 4
         
-        # Global Time Embedding logic from AstroUNet
+        # --- Time Embedding ---
         self.time_mlp = nn.Sequential(
-            SinusoidalTimeEmbedding(hidden_dim),
-            nn.Linear(hidden_dim, time_emb_dim),
+            SinusoidalTimeEmbedding(base_channels),
+            nn.Linear(base_channels, time_emb_dim),
             nn.SiLU(),
             nn.Linear(time_emb_dim, time_emb_dim)
         )
         
-        # 1x1 Conv to map latent channels to the hidden dimension
-        self.conv_in = nn.Conv2d(in_channels, hidden_dim, 1)
+        self.conv_in = nn.Conv2d(in_channels, base_channels, 3, padding=1)
         
-        # Pure stack of AttentionBlocks (Depth directly controls the number of blocks)
-        self.blocks = nn.ModuleList([
-            AttentionBlock(hidden_dim, num_heads, time_emb_dim) 
-            for _ in range(depth)
-        ])
+        # --- Down Path ---
+        self.down_blocks = nn.ModuleList()
+        current_channels = base_channels
         
-        # Final GroupNorm and 1x1 Conv to map back to latent channels
+        for i, mult in enumerate(ch_multis):
+            out_channels = base_channels * mult
+            self.down_blocks.append(nn.ModuleList([
+                ResidualBlock(current_channels, out_channels, time_emb_dim),
+                ResidualBlock(out_channels, out_channels, time_emb_dim),
+                nn.Conv2d(out_channels, out_channels, 2, stride=2, padding=0) if i != len(ch_multis) - 1 else nn.Identity()
+            ]))
+            current_channels = out_channels
+
+        # --- Dynamic Bottleneck (Where depth applies) ---
+        bottleneck_channels = current_channels
+        self.bottleneck = nn.ModuleList()
+        
+        # 1. Enter the bottleneck with a ResBlock
+        self.bottleneck.append(ResidualBlock(bottleneck_channels, bottleneck_channels, time_emb_dim))
+        
+        # 2. Add exactly 'depth' number of Attention Blocks based on config
+        for _ in range(depth):
+            self.bottleneck.append(AttentionBlock(bottleneck_channels, num_heads))
+            
+        # 3. Exit the bottleneck with a ResBlock
+        self.bottleneck.append(ResidualBlock(bottleneck_channels, bottleneck_channels, time_emb_dim))
+        
+        # --- Up Path ---
+        self.up_blocks = nn.ModuleList()
+        for i, mult in enumerate(reversed(ch_multis)):
+            out_channels = int(base_channels * mult / 2) 
+            input_channels = out_channels * 4 
+            out_channels = base_channels if i == len(ch_multis) - 1 else out_channels
+            
+            self.up_blocks.append(nn.ModuleList([
+                ResidualBlock(input_channels, out_channels, time_emb_dim),
+                ResidualBlock(out_channels , out_channels, time_emb_dim),
+                nn.ConvTranspose2d(out_channels, out_channels, 2, stride=2, padding=0) if i != len(ch_multis) - 1 else nn.Identity()
+            ]))
+
+        # --- Output Mapping ---
         self.conv_out = nn.Sequential(
-            nn.GroupNorm(8, hidden_dim),
+            nn.GroupNorm(8, base_channels),
             nn.SiLU(),
-            nn.Conv2d(hidden_dim, in_channels, 1)
+            nn.Conv2d(base_channels, in_channels, 3, padding=1)
         )
-        
-        # CRITICAL FIX: Zero-initialize the final layer to prevent gradient explosion
-        nn.init.zeros_(self.conv_out[-1].weight)
-        nn.init.zeros_(self.conv_out[-1].bias)
 
     def forward(self, x, t):
-        # 1. Process Time
-        t_emb = self.time_mlp(t)
+        time_emb = self.time_mlp(t)
+        x = self.conv_in(x)
         
-        # 2. Project Input
-        h = self.conv_in(x)
-        
-        # 3. Variable Attention Stack
-        for block in self.blocks:
-            h = block(h, t_emb)
+        skip_connections = []
+        for res_block1, res_block2, downsample in self.down_blocks:
+            x = res_block1(x, time_emb)
+            x = res_block2(x, time_emb)
+            skip_connections.append(x)
+            x = downsample(x)
             
-        # 4. Project Output
-        return self.conv_out(h)
+        for layer in self.bottleneck:
+            if isinstance(layer, ResidualBlock):
+                x = layer(x, time_emb)
+            else: 
+                x = layer(x)
+
+        for i, (res_block1, res_block2, upsample) in enumerate(self.up_blocks):
+            skip = skip_connections.pop()
+            x = torch.cat([x, skip], dim=1)
+            x = res_block1(x, time_emb)
+            x = res_block2(x, time_emb)
+            x = upsample(x)
+            
+        return self.conv_out(x)
