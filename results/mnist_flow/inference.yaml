@@ -1,0 +1,9 @@
+use_ae: false
+diffusion:
+  in_channels: 1
+  latent_size: 32
+  hidden_dim: 128
+  num_heads: 8
+  depth: 2
+schedule: linear
+timesteps: 1000

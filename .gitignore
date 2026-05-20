@@ -5,3 +5,4 @@ MNIST/*
 *.gz
 __pycache__/*
 *.pth
+*.ipynb

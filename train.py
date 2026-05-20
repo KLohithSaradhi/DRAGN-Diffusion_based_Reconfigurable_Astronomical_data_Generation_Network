@@ -102,6 +102,38 @@ def train_backbone(ldm, loader, sched, crit, cfg, out_dir, dev):
 
         torch.save(ldm.unet.state_dict(), out_dir / "bb_weights.pth")
 
+def train_flow_backbone(ldm, loader, crit, cfg, out_dir, dev):
+    opt = torch.optim.AdamW(ldm.unet.parameters(), lr=float(cfg["training"]["lr"]))
+    
+    # Define sampling shape (e.g., a 4x4 grid)
+    sample_n = 16
+    latent_size = cfg["diffusion"]["latent_size"]
+    in_channels = cfg["diffusion"]["in_channels"]
+    latent_shape = (sample_n, in_channels, latent_size, latent_size)
+
+    for epoch in range(cfg["training"]["epochs"]):
+        ldm.train()
+        pbar = tqdm(loader, desc=f"Flow BB Ep {epoch+1}")
+        for images, _ in pbar:
+            images = images.to(dev)
+            opt.zero_grad()
+            
+            # --- Call the Flow specific loss! ---
+            loss = ldm.compute_flow_loss(images, crit) 
+            
+            loss.backward()
+            opt.step()
+            pbar.set_postfix(loss=loss.item())
+
+        # Periodically sample images using the ODE Solver
+        if (epoch + 1) % cfg["training"].get("sample_freq", 1) == 0:
+            print(f"\nGenerating Flow samples for epoch {epoch+1}...")
+            # --- Call the ODE Solver instead of DDPM loop ---
+            samples = ldm.sample_flow_images(latent_shape, num_steps=10)
+            save_images(samples, out_dir / "samples" / f"flow_epoch_{epoch+1}.png", nrow=4)
+
+        torch.save(ldm.unet.state_dict(), out_dir / "flow_bb_weights.pth")
+
 def train_lora(ldm, loader, sched, crit, cfg, out_dir, dev):
     params = [p for p in ldm.parameters() if p.requires_grad]
     opt = torch.optim.AdamW(params, lr=float(cfg["training"]["lr"]))
@@ -168,7 +200,13 @@ def main():
         sched = DDPMScheduler(betas=getattr(NoiseSchedules, cfg["training"]["schedule"])(cfg["training"]["timesteps"]), device=dev)
         
         if cfg["stage"] == "bb":
-            train_backbone(ldm, loader, sched, crit, cfg, out_dir, dev)
+            if cfg["training"].get("type") == "flow":
+                print("Starting Optimal Transport Flow Matching Training...")
+                # Notice we drop the `sched` argument here
+                train_flow_backbone(ldm, loader, crit, cfg, out_dir, dev)
+            else:
+                print("Starting Standard DDPM Training...")
+                train_backbone(ldm, loader, sched, crit, cfg, out_dir, dev)
             
         elif cfg["stage"] == "lora":
             ldm.unet.load_state_dict(torch.load(cfg['weights']['bb_base'], map_location=dev))
