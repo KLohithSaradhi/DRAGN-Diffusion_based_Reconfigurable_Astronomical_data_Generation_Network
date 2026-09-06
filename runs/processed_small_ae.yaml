@@ -1,0 +1,32 @@
+run_name: "processed_no_ae_bb"
+stage: "ae"
+output_dir: "./results"
+
+data:
+  dataset_type: "astro"
+  root_dir: "/home1/lkanduku/DRAGN-Diffusion_based_Reconfigurable_Astronomical_data_Generation_Network/ProcessedData"
+  condition: ""
+  batch_size: 32
+
+training:
+  type: "flow"
+  epochs: 10
+  lr: 0.0001
+  save_freq: 10
+  timesteps: 1000
+  schedule: "linear"
+  loss_type: "mse"
+
+autoencoder:
+  channels: [3, 32, 32]
+  kernels: [4, 4, 4, 4]
+  strides: [2, 2, 2, 2]
+  paddings: [1, 1, 1, 1]
+  out_paddings: [0, 0, 0, 0]
+
+diffusion:
+  in_channels: 3
+  latent_size: 128
+  hidden_dim: 128
+  num_heads: 8
+  depth: 2

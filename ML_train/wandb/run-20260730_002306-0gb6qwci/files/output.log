@@ -1,0 +1,26 @@
+Traceback (most recent call last):
+  File "/home1/lkanduku/DRAGN-Diffusion_based_Reconfigurable_Astronomical_data_Generation_Network/ML_train/train.py", line 169, in <module>
+    main()
+    ~~~~^^
+  File "/home1/lkanduku/DRAGN-Diffusion_based_Reconfigurable_Astronomical_data_Generation_Network/ML_train/train.py", line 144, in main
+    train_loss, train_acc = train_one_epoch(model, train_loader, criterion, optimizer, device)
+                            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home1/lkanduku/DRAGN-Diffusion_based_Reconfigurable_Astronomical_data_Generation_Network/ML_train/train.py", line 27, in train_one_epoch
+    for imgs, targets in loader:
+                         ^^^^^^
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/torch/utils/data/dataloader.py", line 741, in __next__
+    data = self._next_data()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/torch/utils/data/dataloader.py", line 1524, in _next_data
+    idx, data = self._get_data()
+                ~~~~~~~~~~~~~~^^
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/torch/utils/data/dataloader.py", line 1473, in _get_data
+    success, data = self._try_get_data()
+                    ~~~~~~~~~~~~~~~~~~^^
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/torch/utils/data/dataloader.py", line 1310, in _try_get_data
+    data = self._data_queue.get(timeout=timeout)
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/queue.py", line 210, in get
+    self.not_empty.wait(remaining)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/threading.py", line 373, in wait
+    gotit = waiter.acquire(True, timeout)
+KeyboardInterrupt

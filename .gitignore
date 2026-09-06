@@ -6,3 +6,6 @@ MNIST/*
 __pycache__/*
 *.pth
 *.ipynb
+results/*
+logs/*
+*.zip

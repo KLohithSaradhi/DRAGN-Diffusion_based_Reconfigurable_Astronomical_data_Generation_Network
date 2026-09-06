@@ -1,0 +1,48 @@
+2026-07-29 20:18:43,139 INFO    MainThread:2820477 [wandb_setup.py:_flush():81] Current SDK version is 0.28.1
+2026-07-29 20:18:43,139 INFO    MainThread:2820477 [wandb_setup.py:_flush():81] Configure stats pid to 2820477
+2026-07-29 20:18:43,139 INFO    MainThread:2820477 [wandb_setup.py:_flush():81] Loading settings from environment variables
+2026-07-29 20:18:43,139 INFO    MainThread:2820477 [wandb_init.py:setup_run_log_directory():729] Logging user logs to /home1/lkanduku/DRAGN-Diffusion_based_Reconfigurable_Astronomical_data_Generation_Network/ML_train/wandb/run-20260729_201843-3jkzqbsq/logs/debug.log
+2026-07-29 20:18:43,139 INFO    MainThread:2820477 [wandb_init.py:setup_run_log_directory():730] Logging internal logs to /home1/lkanduku/DRAGN-Diffusion_based_Reconfigurable_Astronomical_data_Generation_Network/ML_train/wandb/run-20260729_201843-3jkzqbsq/logs/debug-internal.log
+2026-07-29 20:18:43,139 INFO    MainThread:2820477 [wandb_init.py:init():772] calling init triggers
+2026-07-29 20:18:43,139 INFO    MainThread:2820477 [wandb_init.py:init():777] wandb.init called with sweep_config: {}
+config: {'_wandb': {}}
+2026-07-29 20:18:43,139 INFO    MainThread:2820477 [wandb_init.py:init():820] starting backend
+2026-07-29 20:18:43,139 INFO    MainThread:2820477 [wandb_init.py:init():835] sending inform_init request
+2026-07-29 20:18:43,269 INFO    MainThread:2820477 [wandb_init.py:init():840] backend started and connected
+2026-07-29 20:18:43,270 INFO    MainThread:2820477 [wandb_init.py:init():910] updated telemetry
+2026-07-29 20:18:43,279 INFO    MainThread:2820477 [wandb_init.py:init():933] communicating run to backend with 90.0 second timeout
+2026-07-29 20:18:43,940 INFO    MainThread:2820477 [wandb_init.py:init():978] starting run threads in backend
+2026-07-29 20:18:44,007 INFO    MainThread:2820477 [wandb_run.py:_console_start():2621] atexit reg
+2026-07-29 20:18:44,008 INFO    MainThread:2820477 [wandb_run.py:_redirect():2471] redirect: wrap_raw
+2026-07-29 20:18:44,008 INFO    MainThread:2820477 [wandb_run.py:_redirect():2540] Wrapping output streams.
+2026-07-29 20:18:44,008 INFO    MainThread:2820477 [wandb_run.py:_redirect():2563] Redirects installed.
+2026-07-29 20:18:44,010 INFO    MainThread:2820477 [wandb_init.py:init():1016] run started, returning control to user process
+2026-07-29 20:18:44,010 INFO    MainThread:2820477 [wandb_run.py:_config_callback():1346] config_cb None None {'run_name': 'sample_resnet18_run', 'output_dir': './ML_train_runs', 'data': {'root_dir': '/home1/lkanduku/DRAGN-Diffusion_based_Reconfigurable_Astronomical_data_Generation_Network/ProcessedData', 'image_size': 224, 'batch_size': 32, 'val_split': 0.2, 'num_workers': 4, 'augment': True}, 'model': {'pretrained': True, 'freeze_backbone': False}, 'training': {'epochs': 10, 'lr': '1e-4'}, 'logging': {'wandb': True, 'project': 'astro_classification'}, 'seed': 42}
+2026-07-29 20:30:13,347 INFO    wandb-AsyncioManager-main:2820477 [service_client.py:_forward_responses():122] [no run ID] Reached EOF.
+2026-07-29 20:30:13,347 INFO    wandb-AsyncioManager-main:2820477 [mailbox.py:close():154] [no run ID] Closing mailbox, abandoning 2 handles.
+2026-07-29 20:30:13,348 ERROR   wandb-AsyncioManager-main:2820477 [asyncio_manager.py:fn_wrap_exceptions():197] Uncaught exception in run_soon callback.
+Traceback (most recent call last):
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/asyncio_manager.py", line 195, in fn_wrap_exceptions
+    await fn()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/run_messages.py", line 90, in loop
+    await asyncio_compat.race(
+    ...<2 lines>...
+    )
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/asyncio_compat.py", line 279, in race
+    async with open_task_group(race=True) as tg:
+               ~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/contextlib.py", line 221, in __aexit__
+    await anext(self.gen)
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/asyncio_compat.py", line 241, in open_task_group
+    await task_group._wait_all(race=race, timeout=exit_timeout)
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/asyncio_compat.py", line 181, in _wait_all
+    raise exc
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/run_messages.py", line 113, in _print_all
+    result = await handle.wait_async(timeout=None)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/mailbox/mailbox_handle.py", line 127, in wait_async
+    response = await self._handle.wait_async(timeout=timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/mailbox/response_handle.py", line 123, in wait_async
+    raise HandleAbandonedError()
+wandb.sdk.mailbox.mailbox_handle.HandleAbandonedError

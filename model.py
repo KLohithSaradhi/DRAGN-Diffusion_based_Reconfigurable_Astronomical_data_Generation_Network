@@ -23,7 +23,9 @@ class LatentDiffusionModel(nn.Module):
         if self.ae == None: return latents
         return self.ae.decoder(latents)
 
-    def forward(self, noisy_latents, t): return self.unet(noisy_latents, t)
+    def forward(self, noisy_latents, t): 
+        print(torch.max(noisy_latents), torch.min(noisy_latents), torch.mean(noisy_latents))
+        return self.unet(noisy_latents, t)
 
     def compute_loss(self, images, scheduler, criterion):
         latents = self.encode(images)
@@ -39,9 +41,13 @@ class LatentDiffusionModel(nn.Module):
         x_1 = self.encode(images)
         device = x_1.device
         batch_size = x_1.shape[0]
+
+        # print("x_1 details", torch.max(x_1), torch.min(x_1), torch.mean(x_1))
         
         # 2. Get Random Noise (x_0)
-        x_0 = torch.randn_like(x_1)
+        x_0 = torch.randn_like(x_1) * 0.5
+
+        # print("x_0 details", torch.max(x_0), torch.min(x_0), torch.mean(x_0))
         
         # --- 3. MINIBATCH OPTIMAL TRANSPORT ---
         # Flatten tensors to calculate the distance between every noise and image
@@ -73,7 +79,10 @@ class LatentDiffusionModel(nn.Module):
         
         # 7. Network Prediction
         # Your U-Net takes x_t and t, and predicts the vector field
+        # print(torch.max(x_t), torch.min(x_t), torch.mean(x_t))
         pred_velocity = self.unet(x_t, t)
+        # print("pred_v details", torch.max(pred_velocity), torch.min(pred_velocity), torch.mean(pred_velocity))
+        # print("target_v details", torch.max(target_velocity), torch.min(target_velocity), torch.mean(target_velocity))
         
         # 8. Loss (MSE between predicted wind direction and true straight-line vector)
         return criterion(pred_velocity, target_velocity)
@@ -119,6 +128,8 @@ class LatentDiffusionModel(nn.Module):
             
             # Predict the velocity vector at current position
             velocity = self.unet(x, t_batch)
+            # print("velocity details", torch.max(velocity), torch.min(velocity), torch.mean(velocity))
+
             
             # Take a step forward along the straight line (Euler's Method)
             x = x + (velocity * step_size)

@@ -1,0 +1,26 @@
+# Sample config for ML_train
+run_name: sample_resnet18_run
+output_dir: ./ML_train_runs
+
+data:
+  root_dir: /home1/lkanduku/DRAGN-Diffusion_based_Reconfigurable_Astronomical_data_Generation_Network/ProcessedData
+  image_size: 224
+  batch_size: 32
+  val_split: 0.2
+  num_workers: 4
+  augment: true
+
+model:
+  pretrained: true
+  freeze_backbone: false
+
+training:
+  epochs: 50
+  lr: 1e-5
+
+logging:
+  wandb: true
+  project: astro_classification
+
+# optional: seed, scheduler, etc.
+seed: 42

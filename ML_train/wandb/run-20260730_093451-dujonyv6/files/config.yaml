@@ -1,0 +1,140 @@
+_wandb:
+    value:
+        cli_version: 0.28.1
+        e:
+            n4ifpbhn6yj9ybyucnpqamm7a6txjgvu:
+                args:
+                    - --config
+                    - ./runs/resnet_18.yaml
+                codePath: ML_train/train.py
+                codePathLocal: train.py
+                cpu_count: 64
+                cpu_count_logical: 64
+                cudaVersion: "13.0"
+                disk:
+                    /:
+                        total: "134954528768"
+                        used: "7952121856"
+                email: lohithinfinite154@gmail.com
+                executable: /home1/lkanduku/miniconda3/envs/torch/bin/python
+                git:
+                    commit: 9c5b0c25175c1c5c290965cc0e799d488cb0c8b2
+                    remote: https://github.com/KLohithSaradhi/DRAGN-Diffusion_based_Reconfigurable_Astronomical_data_Generation_Network.git
+                gpu: NVIDIA A100-PCIE-40GB
+                gpu_count: 1
+                gpu_nvidia:
+                    - architecture: Ampere
+                      cudaCores: 6912
+                      memoryTotal: "42949672960"
+                      name: NVIDIA A100-PCIE-40GB
+                      uuid: GPU-889a7487-94ac-1651-9e2e-96ec28fae4c1
+                host: a01-15.hpc.usc.edu
+                memory:
+                    total: "269909057536"
+                os: Linux-4.18.0-553.126.1.el8_10.x86_64-x86_64-with-glibc2.28
+                program: /home1/lkanduku/DRAGN-Diffusion_based_Reconfigurable_Astronomical_data_Generation_Network/ML_train/train.py
+                python: CPython 3.14.4
+                root: /home1/lkanduku/DRAGN-Diffusion_based_Reconfigurable_Astronomical_data_Generation_Network/ML_train
+                slurm:
+                    cluster_name: discovery
+                    conf: /var/spool/slurm/d/conf-cache/slurm.conf
+                    cpus_on_node: "8"
+                    cpus_per_task: "8"
+                    gpus_on_node: "1"
+                    gtids: "0"
+                    job_account: kmpardo_1874
+                    job_cpus_per_node: "8"
+                    job_end_time: "1785435131"
+                    job_gid: "102197"
+                    job_gpus: "0"
+                    job_group: lkanduku
+                    job_id: "10714386"
+                    job_name: interactive
+                    job_nodelist: a01-15
+                    job_num_nodes: "1"
+                    job_partition: gpu
+                    job_qos: normal
+                    job_sluid: s8FXKYSWRWBG00
+                    job_start_time: "1785427931"
+                    job_uid: "609437"
+                    job_user: lkanduku
+                    jobid: "10714386"
+                    launch_node_ipaddr: 10.125.0.197
+                    localid: "0"
+                    mem_per_node: "16384"
+                    mpi_type: pmix_v5
+                    nnodes: "1"
+                    nodeid: "0"
+                    nodelist: a01-15
+                    nprocs: "1"
+                    ntasks: "1"
+                    oom_kill_step: "0"
+                    pmix_mapping_serv: (vector,(0,1,1))
+                    pmixp_abort_agent_port: "39121"
+                    prio_process: "0"
+                    procid: "0"
+                    pty_port: "34881"
+                    pty_win_col: "222"
+                    pty_win_row: "19"
+                    script_context: prolog_task
+                    srun_comm_host: 10.125.0.197
+                    srun_comm_port: "36259"
+                    step_id: "-6"
+                    step_launcher_port: "36259"
+                    step_nodelist: a01-15
+                    step_num_nodes: "1"
+                    step_num_tasks: "1"
+                    step_tasks_per_node: "1"
+                    stepid: "-6"
+                    submit_dir: /home1/lkanduku/DRAGN-Diffusion_based_Reconfigurable_Astronomical_data_Generation_Network/ML_train
+                    submit_host: discovery2.hpc.usc.edu
+                    task_pid: "1005719"
+                    tasks_per_node: "1"
+                    topology_addr: a01-15
+                    topology_addr_pattern: node
+                    tres_bind: gres/gpu:per_task:1
+                    tres_per_task: cpu=8,gres/gpu=1
+                startedAt: "2026-07-30T16:34:51.572911Z"
+                writerId: n4ifpbhn6yj9ybyucnpqamm7a6txjgvu
+        m: []
+        python_version: 3.14.4
+        t:
+            "1":
+                - 1
+                - 41
+            "2":
+                - 1
+                - 41
+            "3":
+                - 13
+                - 61
+            "4": 3.14.4
+            "5": 0.28.1
+            "12": 0.28.1
+            "13": linux-x86_64
+data:
+    value:
+        augment: true
+        batch_size: 32
+        image_size: 224
+        num_workers: 4
+        root_dir: /home1/lkanduku/DRAGN-Diffusion_based_Reconfigurable_Astronomical_data_Generation_Network/ProcessedData
+        val_split: 0.2
+logging:
+    value:
+        project: astro_classification
+        wandb: true
+model:
+    value:
+        freeze_backbone: false
+        pretrained: true
+output_dir:
+    value: ./ML_train_runs
+run_name:
+    value: sample_resnet18_run
+seed:
+    value: 42
+training:
+    value:
+        epochs: 10
+        lr: "1e-4"

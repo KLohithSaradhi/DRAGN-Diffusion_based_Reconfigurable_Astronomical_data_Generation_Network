@@ -1,0 +1,35 @@
+run_name: "mnist_flow_5_cosine"
+stage: "lora"
+output_dir: "./results"
+ 
+weights:
+  bb_base: "/home1/lkanduku/DRAGN-Diffusion_based_Reconfigurable_Astronomical_data_Generation_Network/results/mnist_flow_cosine/flow_bb_weights.pth"
+
+data:
+  dataset_type: "mnist"
+  root_dir: "./"
+  condition: "5"
+  batch_size: 256
+  transform: "mnist_standard"
+
+training:
+  type: "flow"
+  epochs: 50
+  lr: 0.001
+  timesteps: 1000
+  save_freq: 10
+  schedule: "cosine"
+  loss_type: "mse"
+
+lora:
+  apply: true
+  rank: 32
+  alpha: 24
+
+
+diffusion:
+  in_channels: 1
+  latent_size: 32
+  hidden_dim: 128
+  num_heads: 8
+  depth: 2

@@ -1,0 +1,22 @@
+run_name: "3_128_128ae"
+stage: "ae"
+output_dir: "/home1/lkanduku/DRAGN-Diffusion_based_Reconfigurable_Astronomical_data_Generation_Network/results"
+
+data:
+  dataset_type: "astro"
+  root_dir: "/home1/lkanduku/SDSS"
+  condition: ""
+  batch_size: 128
+
+training:
+  epochs: 100
+  lr: 0.001
+  save_freq: 10
+  loss_type: "mse"
+
+autoencoder:
+  channels: [3, 128, 128]
+  kernels: [4, 4]
+  strides: [2, 2]
+  paddings: [1, 1]
+  out_paddings: [0, 0]

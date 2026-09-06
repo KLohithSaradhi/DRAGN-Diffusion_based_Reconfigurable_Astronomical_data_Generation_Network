@@ -1,0 +1,11 @@
+Epoch 1/10  Train loss: 1.1203 acc: 0.5531  Val loss: 1.0385 acc: 0.5798 f1: None
+Epoch 2/10  Train loss: 1.0195 acc: 0.5969  Val loss: 1.0375 acc: 0.5867 f1: None
+Epoch 3/10  Train loss: 0.9804 acc: 0.6138  Val loss: 0.9842 acc: 0.6097 f1: None
+Epoch 4/10  Train loss: 0.9477 acc: 0.6224  Val loss: 1.0471 acc: 0.5837 f1: None
+Epoch 5/10  Train loss: 0.9180 acc: 0.6369  Val loss: 0.9803 acc: 0.6022 f1: None
+Epoch 6/10  Train loss: 0.8838 acc: 0.6483  Val loss: 1.1050 acc: 0.5929 f1: None
+Epoch 7/10  Train loss: 0.8471 acc: 0.6670  Val loss: 1.0211 acc: 0.5927 f1: None
+Epoch 8/10  Train loss: 0.7997 acc: 0.6850  Val loss: 1.0400 acc: 0.6049 f1: None
+Epoch 9/10  Train loss: 0.7353 acc: 0.7103  Val loss: 1.1527 acc: 0.5990 f1: None
+Epoch 10/10  Train loss: 0.6651 acc: 0.7420  Val loss: 1.1948 acc: 0.5895 f1: None
+Training complete. Artifacts saved to ML_train_runs/sample_resnet18_run

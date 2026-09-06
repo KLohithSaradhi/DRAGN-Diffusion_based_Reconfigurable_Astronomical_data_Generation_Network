@@ -1,0 +1,318 @@
+2026-07-29 21:29:08,619 INFO    MainThread:348391 [wandb_setup.py:_flush():81] Current SDK version is 0.28.1
+2026-07-29 21:29:08,620 INFO    MainThread:348391 [wandb_setup.py:_flush():81] Configure stats pid to 348391
+2026-07-29 21:29:08,620 INFO    MainThread:348391 [wandb_setup.py:_flush():81] Loading settings from environment variables
+2026-07-29 21:29:08,620 INFO    MainThread:348391 [wandb_init.py:setup_run_log_directory():729] Logging user logs to /home1/lkanduku/DRAGN-Diffusion_based_Reconfigurable_Astronomical_data_Generation_Network/ML_train/wandb/run-20260729_212908-no4mhkkb/logs/debug.log
+2026-07-29 21:29:08,620 INFO    MainThread:348391 [wandb_init.py:setup_run_log_directory():730] Logging internal logs to /home1/lkanduku/DRAGN-Diffusion_based_Reconfigurable_Astronomical_data_Generation_Network/ML_train/wandb/run-20260729_212908-no4mhkkb/logs/debug-internal.log
+2026-07-29 21:29:08,620 INFO    MainThread:348391 [wandb_init.py:init():772] calling init triggers
+2026-07-29 21:29:08,620 INFO    MainThread:348391 [wandb_init.py:init():777] wandb.init called with sweep_config: {}
+config: {'_wandb': {}}
+2026-07-29 21:29:08,620 INFO    MainThread:348391 [wandb_init.py:init():820] starting backend
+2026-07-29 21:29:08,620 INFO    MainThread:348391 [wandb_init.py:init():835] sending inform_init request
+2026-07-29 21:29:08,740 INFO    MainThread:348391 [wandb_init.py:init():840] backend started and connected
+2026-07-29 21:29:08,741 INFO    MainThread:348391 [wandb_init.py:init():910] updated telemetry
+2026-07-29 21:29:08,748 INFO    MainThread:348391 [wandb_init.py:init():933] communicating run to backend with 90.0 second timeout
+2026-07-29 21:29:09,232 INFO    MainThread:348391 [wandb_init.py:init():978] starting run threads in backend
+2026-07-29 21:29:09,315 INFO    MainThread:348391 [wandb_run.py:_console_start():2621] atexit reg
+2026-07-29 21:29:09,315 INFO    MainThread:348391 [wandb_run.py:_redirect():2471] redirect: wrap_raw
+2026-07-29 21:29:09,316 INFO    MainThread:348391 [wandb_run.py:_redirect():2540] Wrapping output streams.
+2026-07-29 21:29:09,316 INFO    MainThread:348391 [wandb_run.py:_redirect():2563] Redirects installed.
+2026-07-29 21:29:09,318 INFO    MainThread:348391 [wandb_init.py:init():1016] run started, returning control to user process
+2026-07-29 21:29:09,319 INFO    MainThread:348391 [wandb_run.py:_config_callback():1346] config_cb None None {'run_name': 'sample_resnet18_run', 'output_dir': './ML_train_runs', 'data': {'root_dir': '/home1/lkanduku/DRAGN-Diffusion_based_Reconfigurable_Astronomical_data_Generation_Network/ProcessedData', 'image_size': 224, 'batch_size': 32, 'val_split': 0.2, 'num_workers': 4, 'augment': True}, 'model': {'pretrained': True, 'freeze_backbone': False}, 'training': {'epochs': 10, 'lr': '1e-4'}, 'logging': {'wandb': True, 'project': 'astro_classification'}, 'seed': 42}
+2026-07-29 21:29:17,595 INFO    wandb-AsyncioManager-main:348391 [service_client.py:_forward_responses():122] [no run ID] Reached EOF.
+2026-07-29 21:29:17,596 INFO    wandb-AsyncioManager-main:348391 [mailbox.py:close():154] [no run ID] Closing mailbox, abandoning 2 handles.
+2026-07-29 21:29:17,596 ERROR   wandb-AsyncioManager-main:348391 [asyncio_manager.py:fn_wrap_exceptions():197] Uncaught exception in run_soon callback.
+Traceback (most recent call last):
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/asyncio_manager.py", line 195, in fn_wrap_exceptions
+    await fn()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/run_messages.py", line 90, in loop
+    await asyncio_compat.race(
+    ...<2 lines>...
+    )
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/asyncio_compat.py", line 279, in race
+    async with open_task_group(race=True) as tg:
+               ~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/contextlib.py", line 221, in __aexit__
+    await anext(self.gen)
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/asyncio_compat.py", line 241, in open_task_group
+    await task_group._wait_all(race=race, timeout=exit_timeout)
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/asyncio_compat.py", line 181, in _wait_all
+    raise exc
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/run_messages.py", line 113, in _print_all
+    result = await handle.wait_async(timeout=None)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/mailbox/mailbox_handle.py", line 127, in wait_async
+    response = await self._handle.wait_async(timeout=timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/mailbox/response_handle.py", line 123, in wait_async
+    raise HandleAbandonedError()
+wandb.sdk.mailbox.mailbox_handle.HandleAbandonedError
+2026-07-29 21:29:18,083 ERROR   wandb-AsyncioManager-main:348391 [asyncio_manager.py:fn_wrap_exceptions():197] Uncaught exception in run_soon callback.
+Traceback (most recent call last):
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/asyncio_manager.py", line 195, in fn_wrap_exceptions
+    await fn()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 42, in publish
+    await self._send_server_request(request)
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 84, in _send_server_request
+    await self._drain_writer()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 92, in _drain_writer
+    await self._writer.drain()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/asyncio/streams.py", line 386, in drain
+    await self._protocol._drain_helper()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/asyncio/streams.py", line 166, in _drain_helper
+    raise ConnectionResetError('Connection lost')
+ConnectionResetError: Connection lost
+2026-07-29 21:29:18,086 ERROR   wandb-AsyncioManager-main:348391 [asyncio_manager.py:fn_wrap_exceptions():197] Uncaught exception in run_soon callback.
+Traceback (most recent call last):
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/asyncio_manager.py", line 195, in fn_wrap_exceptions
+    await fn()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 42, in publish
+    await self._send_server_request(request)
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 75, in _send_server_request
+    raise self._broken_exc.with_traceback(self._broken_tb)
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 84, in _send_server_request
+    await self._drain_writer()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 92, in _drain_writer
+    await self._writer.drain()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/asyncio/streams.py", line 386, in drain
+    await self._protocol._drain_helper()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/asyncio/streams.py", line 166, in _drain_helper
+    raise ConnectionResetError('Connection lost')
+ConnectionResetError: Connection lost
+2026-07-29 21:29:18,088 ERROR   wandb-AsyncioManager-main:348391 [asyncio_manager.py:fn_wrap_exceptions():197] Uncaught exception in run_soon callback.
+Traceback (most recent call last):
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/asyncio_manager.py", line 195, in fn_wrap_exceptions
+    await fn()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 42, in publish
+    await self._send_server_request(request)
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 75, in _send_server_request
+    raise self._broken_exc.with_traceback(self._broken_tb)
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 84, in _send_server_request
+    await self._drain_writer()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 92, in _drain_writer
+    await self._writer.drain()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/asyncio/streams.py", line 386, in drain
+    await self._protocol._drain_helper()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/asyncio/streams.py", line 166, in _drain_helper
+    raise ConnectionResetError('Connection lost')
+ConnectionResetError: Connection lost
+2026-07-29 21:29:18,089 ERROR   wandb-AsyncioManager-main:348391 [asyncio_manager.py:fn_wrap_exceptions():197] Uncaught exception in run_soon callback.
+Traceback (most recent call last):
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/asyncio_manager.py", line 195, in fn_wrap_exceptions
+    await fn()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 42, in publish
+    await self._send_server_request(request)
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 75, in _send_server_request
+    raise self._broken_exc.with_traceback(self._broken_tb)
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 84, in _send_server_request
+    await self._drain_writer()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 92, in _drain_writer
+    await self._writer.drain()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/asyncio/streams.py", line 386, in drain
+    await self._protocol._drain_helper()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/asyncio/streams.py", line 166, in _drain_helper
+    raise ConnectionResetError('Connection lost')
+ConnectionResetError: Connection lost
+2026-07-29 21:29:18,089 ERROR   wandb-AsyncioManager-main:348391 [asyncio_manager.py:fn_wrap_exceptions():197] Uncaught exception in run_soon callback.
+Traceback (most recent call last):
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/asyncio_manager.py", line 195, in fn_wrap_exceptions
+    await fn()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 42, in publish
+    await self._send_server_request(request)
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 75, in _send_server_request
+    raise self._broken_exc.with_traceback(self._broken_tb)
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 84, in _send_server_request
+    await self._drain_writer()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 92, in _drain_writer
+    await self._writer.drain()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/asyncio/streams.py", line 386, in drain
+    await self._protocol._drain_helper()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/asyncio/streams.py", line 166, in _drain_helper
+    raise ConnectionResetError('Connection lost')
+ConnectionResetError: Connection lost
+2026-07-29 21:29:18,090 ERROR   wandb-AsyncioManager-main:348391 [asyncio_manager.py:fn_wrap_exceptions():197] Uncaught exception in run_soon callback.
+Traceback (most recent call last):
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/asyncio_manager.py", line 195, in fn_wrap_exceptions
+    await fn()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 42, in publish
+    await self._send_server_request(request)
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 75, in _send_server_request
+    raise self._broken_exc.with_traceback(self._broken_tb)
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 84, in _send_server_request
+    await self._drain_writer()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 92, in _drain_writer
+    await self._writer.drain()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/asyncio/streams.py", line 386, in drain
+    await self._protocol._drain_helper()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/asyncio/streams.py", line 166, in _drain_helper
+    raise ConnectionResetError('Connection lost')
+ConnectionResetError: Connection lost
+2026-07-29 21:29:18,091 ERROR   wandb-AsyncioManager-main:348391 [asyncio_manager.py:fn_wrap_exceptions():197] Uncaught exception in run_soon callback.
+Traceback (most recent call last):
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/asyncio_manager.py", line 195, in fn_wrap_exceptions
+    await fn()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 42, in publish
+    await self._send_server_request(request)
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 75, in _send_server_request
+    raise self._broken_exc.with_traceback(self._broken_tb)
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 84, in _send_server_request
+    await self._drain_writer()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 92, in _drain_writer
+    await self._writer.drain()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/asyncio/streams.py", line 386, in drain
+    await self._protocol._drain_helper()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/asyncio/streams.py", line 166, in _drain_helper
+    raise ConnectionResetError('Connection lost')
+ConnectionResetError: Connection lost
+2026-07-29 21:29:18,092 ERROR   wandb-AsyncioManager-main:348391 [asyncio_manager.py:fn_wrap_exceptions():197] Uncaught exception in run_soon callback.
+Traceback (most recent call last):
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/asyncio_manager.py", line 195, in fn_wrap_exceptions
+    await fn()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 42, in publish
+    await self._send_server_request(request)
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 75, in _send_server_request
+    raise self._broken_exc.with_traceback(self._broken_tb)
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 84, in _send_server_request
+    await self._drain_writer()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 92, in _drain_writer
+    await self._writer.drain()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/asyncio/streams.py", line 386, in drain
+    await self._protocol._drain_helper()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/asyncio/streams.py", line 166, in _drain_helper
+    raise ConnectionResetError('Connection lost')
+ConnectionResetError: Connection lost
+2026-07-29 21:29:18,092 ERROR   wandb-AsyncioManager-main:348391 [asyncio_manager.py:fn_wrap_exceptions():197] Uncaught exception in run_soon callback.
+Traceback (most recent call last):
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/asyncio_manager.py", line 195, in fn_wrap_exceptions
+    await fn()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 42, in publish
+    await self._send_server_request(request)
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 75, in _send_server_request
+    raise self._broken_exc.with_traceback(self._broken_tb)
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 84, in _send_server_request
+    await self._drain_writer()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 92, in _drain_writer
+    await self._writer.drain()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/asyncio/streams.py", line 386, in drain
+    await self._protocol._drain_helper()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/asyncio/streams.py", line 166, in _drain_helper
+    raise ConnectionResetError('Connection lost')
+ConnectionResetError: Connection lost
+2026-07-29 21:29:18,116 ERROR   wandb-AsyncioManager-main:348391 [asyncio_manager.py:fn_wrap_exceptions():197] Uncaught exception in run_soon callback.
+Traceback (most recent call last):
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/asyncio_manager.py", line 195, in fn_wrap_exceptions
+    await fn()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 42, in publish
+    await self._send_server_request(request)
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 75, in _send_server_request
+    raise self._broken_exc.with_traceback(self._broken_tb)
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 84, in _send_server_request
+    await self._drain_writer()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 92, in _drain_writer
+    await self._writer.drain()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/asyncio/streams.py", line 386, in drain
+    await self._protocol._drain_helper()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/asyncio/streams.py", line 166, in _drain_helper
+    raise ConnectionResetError('Connection lost')
+ConnectionResetError: Connection lost
+2026-07-29 21:29:18,117 ERROR   wandb-AsyncioManager-main:348391 [asyncio_manager.py:fn_wrap_exceptions():197] Uncaught exception in run_soon callback.
+Traceback (most recent call last):
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/asyncio_manager.py", line 195, in fn_wrap_exceptions
+    await fn()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 42, in publish
+    await self._send_server_request(request)
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 75, in _send_server_request
+    raise self._broken_exc.with_traceback(self._broken_tb)
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 84, in _send_server_request
+    await self._drain_writer()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 92, in _drain_writer
+    await self._writer.drain()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/asyncio/streams.py", line 386, in drain
+    await self._protocol._drain_helper()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/asyncio/streams.py", line 166, in _drain_helper
+    raise ConnectionResetError('Connection lost')
+ConnectionResetError: Connection lost
+2026-07-29 21:29:18,118 ERROR   wandb-AsyncioManager-main:348391 [asyncio_manager.py:fn_wrap_exceptions():197] Uncaught exception in run_soon callback.
+Traceback (most recent call last):
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/asyncio_manager.py", line 195, in fn_wrap_exceptions
+    await fn()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 42, in publish
+    await self._send_server_request(request)
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 75, in _send_server_request
+    raise self._broken_exc.with_traceback(self._broken_tb)
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 84, in _send_server_request
+    await self._drain_writer()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 92, in _drain_writer
+    await self._writer.drain()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/asyncio/streams.py", line 386, in drain
+    await self._protocol._drain_helper()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/asyncio/streams.py", line 166, in _drain_helper
+    raise ConnectionResetError('Connection lost')
+ConnectionResetError: Connection lost
+2026-07-29 21:29:18,118 ERROR   wandb-AsyncioManager-main:348391 [asyncio_manager.py:fn_wrap_exceptions():197] Uncaught exception in run_soon callback.
+Traceback (most recent call last):
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/asyncio_manager.py", line 195, in fn_wrap_exceptions
+    await fn()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 42, in publish
+    await self._send_server_request(request)
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 75, in _send_server_request
+    raise self._broken_exc.with_traceback(self._broken_tb)
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 84, in _send_server_request
+    await self._drain_writer()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 92, in _drain_writer
+    await self._writer.drain()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/asyncio/streams.py", line 386, in drain
+    await self._protocol._drain_helper()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/asyncio/streams.py", line 166, in _drain_helper
+    raise ConnectionResetError('Connection lost')
+ConnectionResetError: Connection lost
+2026-07-29 21:29:18,119 ERROR   wandb-AsyncioManager-main:348391 [asyncio_manager.py:fn_wrap_exceptions():197] Uncaught exception in run_soon callback.
+Traceback (most recent call last):
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/asyncio_manager.py", line 195, in fn_wrap_exceptions
+    await fn()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 42, in publish
+    await self._send_server_request(request)
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 75, in _send_server_request
+    raise self._broken_exc.with_traceback(self._broken_tb)
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 84, in _send_server_request
+    await self._drain_writer()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 92, in _drain_writer
+    await self._writer.drain()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/asyncio/streams.py", line 386, in drain
+    await self._protocol._drain_helper()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/asyncio/streams.py", line 166, in _drain_helper
+    raise ConnectionResetError('Connection lost')
+ConnectionResetError: Connection lost
+2026-07-29 21:29:18,119 ERROR   wandb-AsyncioManager-main:348391 [asyncio_manager.py:fn_wrap_exceptions():197] Uncaught exception in run_soon callback.
+Traceback (most recent call last):
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/asyncio_manager.py", line 195, in fn_wrap_exceptions
+    await fn()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 42, in publish
+    await self._send_server_request(request)
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 75, in _send_server_request
+    raise self._broken_exc.with_traceback(self._broken_tb)
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 84, in _send_server_request
+    await self._drain_writer()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 92, in _drain_writer
+    await self._writer.drain()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/asyncio/streams.py", line 386, in drain
+    await self._protocol._drain_helper()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/asyncio/streams.py", line 166, in _drain_helper
+    raise ConnectionResetError('Connection lost')
+ConnectionResetError: Connection lost
+2026-07-29 21:29:18,120 ERROR   wandb-AsyncioManager-main:348391 [asyncio_manager.py:fn_wrap_exceptions():197] Uncaught exception in run_soon callback.
+Traceback (most recent call last):
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/asyncio_manager.py", line 195, in fn_wrap_exceptions
+    await fn()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 42, in publish
+    await self._send_server_request(request)
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 75, in _send_server_request
+    raise self._broken_exc.with_traceback(self._broken_tb)
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 84, in _send_server_request
+    await self._drain_writer()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/site-packages/wandb/sdk/lib/service/service_client.py", line 92, in _drain_writer
+    await self._writer.drain()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/asyncio/streams.py", line 386, in drain
+    await self._protocol._drain_helper()
+  File "/home1/lkanduku/miniconda3/envs/torch/lib/python3.14/asyncio/streams.py", line 166, in _drain_helper
+    raise ConnectionResetError('Connection lost')
+ConnectionResetError: Connection lost

@@ -30,10 +30,20 @@ mnist_standard = transforms.Compose([
     transforms.ToTensor(), transforms.Pad(2), transforms.Normalize((0.5,), (0.5,)) 
 ])
 
+mnist_x_conv = transforms.Compose([
+    transforms.ToTensor(), transforms.Pad(2), ConvolvePSF(size=7, channels = 1), transforms.Normalize((0.5,), (0.5,)) 
+])
+
 astro_hd = transforms.Compose([
     transforms.Resize((512, 512)), transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
 ])
 
 astro_distorted = transforms.Compose([
     transforms.Resize((512, 512)), transforms.ToTensor(), ConvolvePSF(size=5), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+])
+
+astro_raw_hd = transforms.Compose([
+    transforms.CenterCrop((256, 256)),
+    transforms.ToTensor(), 
+    transforms.Normalize((0.5,), (0.5,)) 
 ])

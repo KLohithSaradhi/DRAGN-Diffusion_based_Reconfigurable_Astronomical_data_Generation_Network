@@ -1,0 +1,13 @@
+Epoch 1/10  Train loss: 0.0081 acc: 0.9984  Val loss: 0.0065 acc: 0.9994 f1: None
+Epoch 2/10  Train loss: 0.0015 acc: 0.9996  Val loss: 0.0011 acc: 0.9996 f1: None
+Traceback (most recent call last):
+  File "/home1/lkanduku/DRAGN-Diffusion_based_Reconfigurable_Astronomical_data_Generation_Network/ML_train/train.py", line 168, in <module>
+    main()
+    ~~~~^^
+  File "/home1/lkanduku/DRAGN-Diffusion_based_Reconfigurable_Astronomical_data_Generation_Network/ML_train/train.py", line 143, in main
+    train_loss, train_acc = train_one_epoch(model, train_loader, criterion, optimizer, device)
+                            ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home1/lkanduku/DRAGN-Diffusion_based_Reconfigurable_Astronomical_data_Generation_Network/ML_train/train.py", line 39, in train_one_epoch
+    running_loss += loss.item() * imgs.size(0)
+                    ~~~~~~~~~^^
+KeyboardInterrupt
