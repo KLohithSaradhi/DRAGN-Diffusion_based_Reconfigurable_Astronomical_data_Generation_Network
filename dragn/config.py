@@ -128,6 +128,7 @@ class TrainingSection(StrictModel):
     log_every: int = Field(default=10, gt=0)
     max_steps: int | None = Field(default=None, gt=0)
     validation_batches: int | None = Field(default=None, gt=0)
+    smoke_test: bool = False
 
 
 class SamplingSection(StrictModel):

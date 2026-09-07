@@ -4,6 +4,7 @@ import argparse
 
 from dragn.config import load_config
 from dragn.training.train_autoencoder import train_autoencoder
+from dragn.training.smoke_dit import run_dit_smoke
 
 
 def main() -> None:
@@ -13,6 +14,9 @@ def main() -> None:
     config = load_config(args.config)
     if config.task == "autoencoder":
         train_autoencoder(config)
+        return
+    if config.task == "base" and config.training.smoke_test:
+        run_dit_smoke(config)
         return
     raise NotImplementedError(f"task={config.task!r} is scheduled for a later DRAGN v2 step")
 
