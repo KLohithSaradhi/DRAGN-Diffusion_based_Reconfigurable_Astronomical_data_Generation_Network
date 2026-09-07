@@ -1,6 +1,7 @@
 """Single YAML entry point for DRAGN v2 experiments."""
 
 import argparse
+from pathlib import Path
 
 from dragn.config import load_config
 from dragn.training.train_autoencoder import train_autoencoder
@@ -14,6 +15,7 @@ def main() -> None:
     parser.add_argument("--config", required=True)
     args = parser.parse_args()
     config = load_config(args.config)
+    experiment_directory = Path(args.config).resolve().parent
     if config.task == "inference":
         run_inference(config)
         return
@@ -21,10 +23,10 @@ def main() -> None:
         train_autoencoder(config)
         return
     if config.task == "base":
-        train_generative(config)
+        train_generative(config, experiment_directory)
         return
     if config.task == "lora":
-        train_lora(config)
+        train_lora(config, experiment_directory)
         return
     raise ValueError(f"Unsupported task: {config.task!r}")
 

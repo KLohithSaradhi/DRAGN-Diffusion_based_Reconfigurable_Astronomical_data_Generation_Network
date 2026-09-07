@@ -8,8 +8,8 @@
 #SBATCH --mem=8G
 #SBATCH --time=00:15:00
 #SBATCH --gpus=1
-#SBATCH --output=%x_%j.out
-#SBATCH --error=%x_%j.err
+#SBATCH --output=logs/%x_%j.out
+#SBATCH --error=logs/%x_%j.err
 
 source /home1/lkanduku/.bashrc
 conda activate /home1/lkanduku/miniconda3/envs/torch/

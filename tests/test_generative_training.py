@@ -77,7 +77,8 @@ class GenerativeTrainingIntegrationTest(unittest.TestCase):
             base_payload["objective"] = {"type": "flow", "prediction": "velocity", "source_std": 1.0}
             base_payload["sampling"] = {"method": "euler", "steps": 2, "num_samples": 2}
             base_config = ExperimentConfig.model_validate(base_payload)
-            checkpoint = train_generative(base_config)
+            base_experiment_directory = root / "experiments" / "test_flow"
+            checkpoint = train_generative(base_config, base_experiment_directory)
 
             self.assertTrue(checkpoint.is_file())
             self.assertTrue((checkpoint.parent / "generated_epoch_0001.png").is_file())
@@ -87,6 +88,9 @@ class GenerativeTrainingIntegrationTest(unittest.TestCase):
             self.assertEqual(saved["objective"]["type"], "flow")
             self.assertIn("ema_state", saved)
             self.assertTrue((checkpoint.parent / "best.pt").is_file())
+            self.assertTrue((base_experiment_directory / "inference.yaml").is_file())
+            self.assertTrue((base_experiment_directory / "inference.sbatch").is_file())
+            self.assertTrue((base_experiment_directory / "logs").is_dir())
 
             lora_payload = {**base_payload, "task": "lora"}
             lora_payload["experiment"] = {
@@ -104,8 +108,14 @@ class GenerativeTrainingIntegrationTest(unittest.TestCase):
                 "alpha": 4,
                 "inference_scale": 1.0,
             }
-            lora_checkpoint = train_lora(ExperimentConfig.model_validate(lora_payload))
+            lora_experiment_directory = root / "experiments" / "test_lora"
+            lora_checkpoint = train_lora(
+                ExperimentConfig.model_validate(lora_payload),
+                lora_experiment_directory,
+            )
             self.assertTrue(lora_checkpoint.is_file())
+            self.assertTrue((lora_experiment_directory / "inference.yaml").is_file())
+            self.assertTrue((lora_experiment_directory / "inference.sbatch").is_file())
             self.assertTrue((lora_checkpoint.parent / "generated_epoch_0001.png").is_file())
             lora_saved = torch.load(lora_checkpoint, map_location="cpu", weights_only=False)
             self.assertEqual(lora_saved["task"], "lora")

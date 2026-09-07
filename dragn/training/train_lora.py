@@ -37,6 +37,7 @@ from dragn.training.train_generative import (
     _objective_batch,
     _validate,
 )
+from dragn.training.inference_bundle import ensure_inference_bundle
 
 
 def _set_seed(seed: int) -> None:
@@ -104,7 +105,10 @@ def _load_frozen_base(
     return model, checkpoint_hash, checkpoint
 
 
-def train_lora(config: ExperimentConfig) -> Path:
+def train_lora(
+    config: ExperimentConfig,
+    experiment_directory: Path | None = None,
+) -> Path:
     if (
         config.task != "lora" or config.model is None or config.objective is None
         or config.sampling is None or config.lora is None or config.data.filter is None
@@ -155,6 +159,14 @@ def train_lora(config: ExperimentConfig) -> Path:
         restore_rng_state(resume["rng_state"])
         train_loader.generator.set_state(resume["loader_generator_state"])
         print(f"resumed={checkpoints.latest_path} next_epoch={start_epoch}", flush=True)
+        if experiment_directory is not None:
+            inference_yaml, inference_sbatch = ensure_inference_bundle(
+                config, checkpoints.latest_path, experiment_directory
+            )
+            print(
+                f"inference_yaml={inference_yaml} inference_sbatch={inference_sbatch}",
+                flush=True,
+            )
 
     output_dir.mkdir(parents=True, exist_ok=True)
     wandb_run = None
@@ -312,6 +324,14 @@ def train_lora(config: ExperimentConfig) -> Path:
         if epoch % config.training.save_every == 0 or stopped_early or epoch == config.training.epochs:
             saved_path = checkpoints.save(state, epoch, is_best)
             print(f"checkpoint={saved_path}", flush=True)
+            if experiment_directory is not None:
+                inference_yaml, inference_sbatch = ensure_inference_bundle(
+                    config, checkpoints.latest_path, experiment_directory
+                )
+                print(
+                    f"inference_yaml={inference_yaml} inference_sbatch={inference_sbatch}",
+                    flush=True,
+                )
         if stopped_early:
             break
     if wandb_run is not None:
