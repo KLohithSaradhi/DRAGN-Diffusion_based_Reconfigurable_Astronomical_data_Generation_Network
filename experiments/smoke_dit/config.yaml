@@ -65,11 +65,11 @@ training:
   log_every: 1
   max_steps: 10
   validation_batches: 1
-  smoke_test: true
 
 sampling:
   method: euler
   steps: 10
+  num_samples: 4
 
 logging:
   wandb: false
