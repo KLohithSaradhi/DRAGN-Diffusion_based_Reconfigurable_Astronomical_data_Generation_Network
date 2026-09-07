@@ -134,6 +134,7 @@ class SamplingSection(StrictModel):
     method: Literal["ancestral", "euler"]
     steps: int = Field(default=50, gt=0)
     num_samples: int = Field(default=16, gt=0)
+    seed: int = Field(default=0, ge=0)
 
 
 class LoggingSection(StrictModel):
@@ -184,6 +185,8 @@ class ExperimentConfig(StrictModel):
             raise ValueError(
                 f"objective.type={self.objective.type!r} requires sampling.method={expected_sampler!r}"
             )
+        if self.objective.type == "ddpm" and self.sampling.steps != self.objective.timesteps:
+            raise ValueError("Ancestral DDPM sampling requires sampling.steps == objective.timesteps")
 
         if self.task == "base":
             if self.lora is not None:

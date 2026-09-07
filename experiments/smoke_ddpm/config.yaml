@@ -2,7 +2,7 @@ schema_version: 2
 task: base
 
 experiment:
-  name: smoke_dit
+  name: smoke_ddpm
   output_dir: ./results
   seed: 42
   resume: never
@@ -45,9 +45,9 @@ model:
   dropout: 0.0
 
 objective:
-  type: flow
-  prediction: velocity
-  timesteps: 1000
+  type: ddpm
+  prediction: epsilon
+  timesteps: 20
   schedule: cosine
   source_std: 1.0
   time_distribution: uniform
@@ -67,9 +67,10 @@ training:
   validation_batches: 1
 
 sampling:
-  method: euler
-  steps: 10
+  method: ancestral
+  steps: 20
   num_samples: 4
+  seed: 123
 
 logging:
   wandb: false

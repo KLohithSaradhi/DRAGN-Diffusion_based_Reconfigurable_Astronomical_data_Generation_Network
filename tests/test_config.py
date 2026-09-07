@@ -78,6 +78,13 @@ class ConfigTests(unittest.TestCase):
         with self.assertRaises(ValidationError):
             ExperimentConfig.model_validate(payload)
 
+    def test_ddpm_ancestral_steps_must_match_training_timesteps(self):
+        payload = lora_payload()
+        payload["objective"] = {"type": "ddpm", "prediction": "epsilon", "timesteps": 10}
+        payload["sampling"] = {"method": "ancestral", "steps": 5}
+        with self.assertRaises(ValidationError):
+            ExperimentConfig.model_validate(payload)
+
     def test_lora_requires_joint_filter(self):
         payload = lora_payload()
         payload["data"]["filter"] = None

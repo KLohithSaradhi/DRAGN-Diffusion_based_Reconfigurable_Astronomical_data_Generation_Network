@@ -84,6 +84,26 @@ class GenerativeTrainingIntegrationTest(unittest.TestCase):
             self.assertEqual(saved["step"], 2)
             self.assertEqual(saved["objective"]["type"], "flow")
 
+            ddpm_payload = {**base_payload}
+            ddpm_payload["experiment"] = {**shared["experiment"], "name": "test_ddpm"}
+            ddpm_payload["objective"] = {
+                "type": "ddpm",
+                "prediction": "epsilon",
+                "timesteps": 4,
+                "schedule": "cosine",
+            }
+            ddpm_payload["sampling"] = {
+                "method": "ancestral",
+                "steps": 4,
+                "num_samples": 2,
+                "seed": 12,
+            }
+            ddpm_config = ExperimentConfig.model_validate(ddpm_payload)
+            ddpm_checkpoint = train_generative(ddpm_config)
+            self.assertTrue(ddpm_checkpoint.is_file())
+            ddpm_saved = torch.load(ddpm_checkpoint, map_location="cpu", weights_only=True)
+            self.assertEqual(ddpm_saved["objective"]["type"], "ddpm")
+
 
 if __name__ == "__main__":
     unittest.main()

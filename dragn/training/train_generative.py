@@ -2,19 +2,19 @@
 
 from __future__ import annotations
 
-import math
 import random
 from contextlib import nullcontext
 from pathlib import Path
 
 import numpy as np
 import torch
-from torch import Tensor
 
 from dragn.config import ExperimentConfig
 from dragn.data import create_loaders
 from dragn.images import save_image_grid
 from dragn.models import AutoencoderKL, DiT, build_autoencoder, build_dit
+from dragn.objectives import DiffusionSchedule, ddpm_prediction_and_target, flow_prediction_and_target
+from dragn.samplers import sample_ddpm, sample_flow, seeded_generator
 
 
 def _set_seed(seed: int) -> None:
@@ -46,39 +46,9 @@ def _load_autoencoder(config: ExperimentConfig, device: torch.device) -> Autoenc
     return autoencoder
 
 
-def _flow_batch(model: DiT, latents: Tensor, source_std: float) -> tuple[Tensor, Tensor]:
-    source = torch.randn_like(latents) * source_std
-    time = torch.rand(latents.shape[0], device=latents.device)
-    broadcast_time = time.reshape(-1, 1, 1, 1)
-    path = (1.0 - broadcast_time) * source + broadcast_time * latents
-    target_velocity = latents - source
-    return model(path, time), target_velocity
-
-
-@torch.no_grad()
-def _sample_flow(
-    model: DiT,
-    autoencoder: AutoencoderKL,
-    count: int,
-    latent_size: int,
-    source_std: float,
-    steps: int,
-    device: torch.device,
-) -> Tensor:
-    model.eval()
-    latents = torch.randn(count, model.in_channels, latent_size, latent_size, device=device) * source_std
-    step_size = 1.0 / steps
-    for index in range(steps):
-        time = torch.full((count,), index / steps, device=device)
-        latents = latents + step_size * model(latents, time)
-    return autoencoder.decode_from_diffusion(latents)
-
-
 def train_generative(config: ExperimentConfig) -> Path:
     if config.task != "base" or config.model is None or config.objective is None or config.sampling is None:
         raise ValueError("Generative training requires a complete task: base configuration")
-    if config.objective.type != "flow":
-        raise NotImplementedError("The authentic Step 3 pipeline currently supports flow; DDPM is Step 4")
     _set_seed(config.experiment.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     output_dir = config.experiment.output_dir / config.experiment.name
@@ -87,6 +57,15 @@ def train_generative(config: ExperimentConfig) -> Path:
     autoencoder = _load_autoencoder(config, device)
     latent_size = config.data.image_size // autoencoder.downsample_factor
     model = build_dit(config.model, autoencoder.latent_channels, latent_size).to(device)
+    diffusion_schedule = (
+        DiffusionSchedule.create(
+            config.objective.timesteps,
+            config.objective.schedule,
+            device,
+        )
+        if config.objective.type == "ddpm"
+        else None
+    )
     optimizer = torch.optim.AdamW(
         model.parameters(),
         lr=config.training.lr,
@@ -118,7 +97,14 @@ def train_generative(config: ExperimentConfig) -> Path:
                 latents = autoencoder.encode_for_diffusion(images, sample_posterior=True)
             optimizer.zero_grad(set_to_none=True)
             with _autocast(device, config.training.precision):
-                prediction, target = _flow_batch(model, latents, config.objective.source_std)
+                if config.objective.type == "flow":
+                    prediction, target = flow_prediction_and_target(
+                        model, latents, config.objective.source_std
+                    )
+                else:
+                    prediction, target = ddpm_prediction_and_target(
+                        model, latents, diffusion_schedule
+                    )
                 loss = torch.nn.functional.mse_loss(prediction, target)
             loss.backward()
             if config.training.grad_clip is not None:
@@ -149,14 +135,22 @@ def train_generative(config: ExperimentConfig) -> Path:
         for batch_index, (images, _) in enumerate(validation_loader):
             images = images.to(device, non_blocking=True)
             latents = autoencoder.encode_for_diffusion(images, sample_posterior=False)
-            prediction, target = _flow_batch(model, latents, config.objective.source_std)
+            validation_generator = seeded_generator(device, config.sampling.seed + batch_index)
+            if config.objective.type == "flow":
+                prediction, target = flow_prediction_and_target(
+                    model, latents, config.objective.source_std, validation_generator
+                )
+            else:
+                prediction, target = ddpm_prediction_and_target(
+                    model, latents, diffusion_schedule, validation_generator
+                )
             validation_losses.append(torch.nn.functional.mse_loss(prediction, target).item())
             if fixed_images is None:
                 fixed_images = images[:config.sampling.num_samples]
             if config.training.validation_batches and batch_index + 1 >= config.training.validation_batches:
                 break
     validation_loss = sum(validation_losses) / len(validation_losses)
-    print(f"validation_flow_loss={validation_loss:.6f}", flush=True)
+    print(f"validation_{config.objective.type}_loss={validation_loss:.6f}", flush=True)
 
     checkpoint_path = output_dir / "checkpoint.pt"
     torch.save({
@@ -172,16 +166,30 @@ def train_generative(config: ExperimentConfig) -> Path:
     reloaded = build_dit(config.model, autoencoder.latent_channels, latent_size).to(device)
     reloaded.load_state_dict(torch.load(checkpoint_path, map_location=device, weights_only=True)["model_state"])
     reloaded.eval()
-    generated = _sample_flow(
-        reloaded,
-        autoencoder,
+    sample_shape = (
         config.sampling.num_samples,
+        autoencoder.latent_channels,
         latent_size,
-        config.objective.source_std,
-        config.sampling.steps,
-        device,
+        latent_size,
     )
-    save_image_grid(generated, output_dir / "generated.png", columns=max(1, round(math.sqrt(len(generated)))))
+    sample_generator = seeded_generator(device, config.sampling.seed)
+    if config.objective.type == "flow":
+        generated_latents = sample_flow(
+            reloaded,
+            sample_shape,
+            config.objective.source_std,
+            config.sampling.steps,
+            sample_generator,
+        )
+    else:
+        generated_latents = sample_ddpm(
+            reloaded,
+            sample_shape,
+            diffusion_schedule,
+            sample_generator,
+        )
+    generated = autoencoder.decode_from_diffusion(generated_latents)
+    save_image_grid(generated, output_dir / "generated.png", columns=max(1, round(len(generated) ** 0.5)))
     if fixed_images is not None:
         with torch.no_grad():
             reconstruction = autoencoder.decode_from_diffusion(
