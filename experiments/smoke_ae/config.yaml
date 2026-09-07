@@ -1,0 +1,50 @@
+schema_version: 2
+task: autoencoder
+
+experiment:
+  name: smoke_ae
+  output_dir: ./results
+  seed: 42
+  resume: never
+
+data:
+  dataset: astro
+  root_dir: ./data/smoke_astro
+  layout: instrument_class
+  image_size: 64
+  channels: 3
+  transform: astro_standard
+  batch_size: 2
+  num_workers: 0
+  validation_fraction: 0.1
+
+autoencoder:
+  enabled: true
+  architecture: autoencoder_kl
+  latent_channels: 16
+  downsample_factor: 8
+  base_channels: 32
+  channel_multipliers: [1, 2, 4, 4]
+  num_res_blocks: 2
+  loss:
+    reconstruction: l1
+    reconstruction_weight: 1.0
+    kl_weight: 0.000001
+    kl_warmup_fraction: 0.1
+    perceptual_weight: 0.0
+
+training:
+  epochs: 2
+  optimizer: adamw
+  lr: 0.0001
+  weight_decay: 0.0
+  precision: fp32
+  grad_clip: 1.0
+  ema_decay: 0.9999
+  save_every: 1
+  sample_every: 1
+  log_every: 1
+
+logging:
+  wandb: false
+  project: dragn
