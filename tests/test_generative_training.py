@@ -78,11 +78,21 @@ class GenerativeTrainingIntegrationTest(unittest.TestCase):
             checkpoint = train_generative(base_config)
 
             self.assertTrue(checkpoint.is_file())
-            self.assertTrue((checkpoint.parent / "generated.png").is_file())
-            self.assertTrue((checkpoint.parent / "validation_reconstructions.png").is_file())
-            saved = torch.load(checkpoint, map_location="cpu", weights_only=True)
-            self.assertEqual(saved["step"], 2)
+            self.assertTrue((checkpoint.parent / "generated_epoch_0001.png").is_file())
+            self.assertTrue((checkpoint.parent / "validation_reconstructions_epoch_0001.png").is_file())
+            saved = torch.load(checkpoint, map_location="cpu", weights_only=False)
+            self.assertEqual(saved["global_step"], 2)
             self.assertEqual(saved["objective"]["type"], "flow")
+            self.assertIn("ema_state", saved)
+            self.assertTrue((checkpoint.parent / "best.pt").is_file())
+
+            resume_payload = {**base_payload}
+            resume_payload["experiment"] = {
+                **base_payload["experiment"],
+                "resume": "required",
+            }
+            resumed_checkpoint = train_generative(ExperimentConfig.model_validate(resume_payload))
+            self.assertEqual(resumed_checkpoint, checkpoint)
 
             ddpm_payload = {**base_payload}
             ddpm_payload["experiment"] = {**shared["experiment"], "name": "test_ddpm"}
@@ -101,7 +111,7 @@ class GenerativeTrainingIntegrationTest(unittest.TestCase):
             ddpm_config = ExperimentConfig.model_validate(ddpm_payload)
             ddpm_checkpoint = train_generative(ddpm_config)
             self.assertTrue(ddpm_checkpoint.is_file())
-            ddpm_saved = torch.load(ddpm_checkpoint, map_location="cpu", weights_only=True)
+            ddpm_saved = torch.load(ddpm_checkpoint, map_location="cpu", weights_only=False)
             self.assertEqual(ddpm_saved["objective"]["type"], "ddpm")
 
 

@@ -8,4 +8,6 @@ __pycache__/*
 *.ipynb
 results/*
 logs/*
+wandb/
+**/wandb/
 *.zip

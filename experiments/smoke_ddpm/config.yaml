@@ -62,9 +62,14 @@ training:
   ema_decay: 0.9999
   save_every: 1
   sample_every: 1
+  validate_every: 1
   log_every: 1
   max_steps: 10
   validation_batches: 1
+  gradient_accumulation_steps: 1
+  lr_schedule: cosine
+  warmup_epochs: 0
+  keep_epoch_checkpoints: 3
 
 sampling:
   method: ancestral

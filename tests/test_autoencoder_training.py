@@ -65,15 +65,15 @@ class AutoencoderTrainingSmokeTest(unittest.TestCase):
             }
             config = ExperimentConfig.model_validate(payload)
             checkpoint_path = train_autoencoder(config)
-            grid_path = checkpoint_path.parent / "reconstructions.png"
+            grid_path = checkpoint_path.parent / "reconstructions_epoch_0001.png"
             self.assertTrue(checkpoint_path.is_file())
             self.assertTrue(grid_path.is_file())
 
-            checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
+            checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
             reloaded = build_autoencoder(config.autoencoder, config.data.channels)
             reloaded.load_state_dict(checkpoint["model_state"])
             self.assertGreater(reloaded.latent_scale.item(), 0.0)
-            self.assertEqual(checkpoint["step"], 2)
+            self.assertEqual(checkpoint["global_step"], 2)
 
 
 if __name__ == "__main__":

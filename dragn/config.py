@@ -125,9 +125,14 @@ class TrainingSection(StrictModel):
     ema_decay: float | None = Field(default=0.9999, gt=0, lt=1)
     save_every: int = Field(default=10, gt=0)
     sample_every: int = Field(default=10, gt=0)
+    validate_every: int = Field(default=1, gt=0)
     log_every: int = Field(default=10, gt=0)
     max_steps: int | None = Field(default=None, gt=0)
     validation_batches: int | None = Field(default=None, gt=0)
+    gradient_accumulation_steps: int = Field(default=1, gt=0)
+    lr_schedule: Literal["constant", "cosine"] = "cosine"
+    warmup_epochs: int = Field(default=0, ge=0)
+    keep_epoch_checkpoints: int = Field(default=3, gt=0)
 
 
 class SamplingSection(StrictModel):
