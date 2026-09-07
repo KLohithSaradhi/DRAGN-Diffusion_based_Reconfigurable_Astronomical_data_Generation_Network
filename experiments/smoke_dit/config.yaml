@@ -63,7 +63,7 @@ training:
   save_every: 1
   sample_every: 1
   log_every: 1
-  max_steps: 1
+  max_steps: 10
   validation_batches: 1
   smoke_test: true
 
