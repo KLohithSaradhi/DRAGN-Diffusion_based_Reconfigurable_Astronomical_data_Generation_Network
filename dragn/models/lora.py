@@ -127,7 +127,11 @@ class AdapterEMA:
         if set(state["adapter"]) != set(self.shadow):
             raise ValueError("Adapter EMA state does not match the injected LoRA modules")
         self.shadow = {
-            name: value.detach().clone() for name, value in state["adapter"].items()
+            name: value.detach().to(
+                device=self.shadow[name].device,
+                dtype=self.shadow[name].dtype,
+            ).clone()
+            for name, value in state["adapter"].items()
         }
 
     @contextmanager

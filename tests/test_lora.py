@@ -67,6 +67,20 @@ class LoRATests(unittest.TestCase):
             torch.testing.assert_close(adapter_state_dict(model)[name], value)
         load_adapter_state_dict(model, state)
 
+    def test_adapter_ema_load_preserves_shadow_dtype(self):
+        model = self._model().to(dtype=torch.float64)
+        inject_lora(
+            model,
+            LoRASection(base_checkpoint="base.pt", preset="mlp_lora", rank=4, alpha=4),
+        )
+        ema = AdapterEMA(model, 0.9)
+        checkpoint_state = ema.state_dict()
+        checkpoint_state["adapter"] = {
+            name: value.float() for name, value in checkpoint_state["adapter"].items()
+        }
+        ema.load_state_dict(checkpoint_state)
+        self.assertTrue(all(value.dtype == torch.float64 for value in ema.shadow.values()))
+
     def test_wrapped_layers_are_lora_linear(self):
         model = self._model()
         inject_lora(

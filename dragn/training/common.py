@@ -101,9 +101,16 @@ def capture_rng_state() -> dict:
 def restore_rng_state(state: dict) -> None:
     random.setstate(state["python"])
     np.random.set_state(state["numpy"])
-    torch.set_rng_state(state["torch"])
+    torch_state = state["torch"].detach().to(
+        device="cpu", dtype=torch.uint8
+    ).contiguous()
+    torch.set_rng_state(torch_state)
     if torch.cuda.is_available() and state["cuda"]:
-        torch.cuda.set_rng_state_all(state["cuda"])
+        cuda_states = [
+            value.detach().to(device="cpu", dtype=torch.uint8).contiguous()
+            for value in state["cuda"]
+        ]
+        torch.cuda.set_rng_state_all(cuda_states)
 
 
 def make_epoch_scheduler(
@@ -158,7 +165,9 @@ class CheckpointManager:
             if mode == "required":
                 raise FileNotFoundError(f"Resume required but checkpoint is missing: {self.latest_path}")
             return None
-        state = torch.load(self.latest_path, map_location=device, weights_only=False)
+        # RNG and DataLoader generator states must remain CPU ByteTensors.
+        # Model/optimizer load_state_dict calls move their own tensors as needed.
+        state = torch.load(self.latest_path, map_location="cpu", weights_only=False)
         if state.get("signature") != signature:
             raise ValueError("Checkpoint signature does not match this experiment configuration")
         return state

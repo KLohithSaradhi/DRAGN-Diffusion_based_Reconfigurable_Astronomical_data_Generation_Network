@@ -105,7 +105,9 @@ def train_autoencoder(config: ExperimentConfig) -> Path:
         global_step = resume["global_step"]
         best_validation = resume["best_validation"]
         restore_rng_state(resume["rng_state"])
-        train_loader.generator.set_state(resume["loader_generator_state"])
+        train_loader.generator.set_state(
+            resume["loader_generator_state"].detach().cpu().to(torch.uint8)
+        )
         print(f"resumed={checkpoints.latest_path} next_epoch={start_epoch}", flush=True)
 
     print(

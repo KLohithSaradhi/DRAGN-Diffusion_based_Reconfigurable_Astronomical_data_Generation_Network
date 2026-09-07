@@ -5,7 +5,13 @@ from pathlib import Path
 import torch
 
 from dragn.config import ExperimentConfig
-from dragn.training.common import CheckpointManager, ExponentialMovingAverage, experiment_signature
+from dragn.training.common import (
+    CheckpointManager,
+    ExponentialMovingAverage,
+    capture_rng_state,
+    experiment_signature,
+    restore_rng_state,
+)
 
 
 def base_payload() -> dict:
@@ -37,6 +43,16 @@ def base_payload() -> dict:
 
 
 class TrainingCommonTests(unittest.TestCase):
+    def test_rng_state_restores_cpu_byte_tensor(self):
+        torch.manual_seed(123)
+        state = capture_rng_state()
+        expected = torch.rand(4)
+        torch.rand(8)
+        restore_rng_state(state)
+        torch.testing.assert_close(torch.rand(4), expected)
+        self.assertEqual(state["torch"].device, torch.device("cpu"))
+        self.assertEqual(state["torch"].dtype, torch.uint8)
+
     def test_ema_updates_without_aliasing_training_model(self):
         model = torch.nn.Linear(2, 2, bias=False)
         ema = ExponentialMovingAverage(model, decay=0.5)
