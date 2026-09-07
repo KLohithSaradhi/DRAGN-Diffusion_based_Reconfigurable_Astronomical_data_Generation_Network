@@ -30,6 +30,7 @@ from dragn.training.common import (
     file_sha256,
     make_epoch_scheduler,
     restore_rng_state,
+    wandb_run_id,
 )
 from dragn.training.train_generative import (
     _generate,
@@ -176,10 +177,18 @@ def train_lora(
         import wandb
         wandb_run = wandb.init(
             project=config.logging.project, name=config.experiment.name,
+            id=wandb_run_id(config, signature), resume="allow",
             config=config.model_dump(mode="json"), dir=str(output_dir / "wandb"),
         )
     total_parameters = sum(parameter.numel() for parameter in model.parameters())
     trainable_parameters = sum(parameter.numel() for parameter in trainable)
+    if wandb_run is not None:
+        wandb_run.summary["model/total_parameters"] = total_parameters
+        wandb_run.summary["model/trainable_parameters"] = trainable_parameters
+        wandb_run.summary["model/trainable_fraction"] = trainable_parameters / total_parameters
+        wandb_run.summary["lora/preset"] = config.lora.preset
+        wandb_run.summary["checkpoints/base_sha256"] = base_hash
+        wandb_run.summary["checkpoints/autoencoder_sha256"] = ae_hash
     print(
         f"device={device} preset={config.lora.preset} base_weights={config.lora.base_weights} "
         f"joint_filter={config.data.filter.instrument}/{config.data.filter.class_name} "
@@ -253,7 +262,10 @@ def train_lora(
                 if wandb_run is not None:
                     wandb_run.log({
                         "train/loss": batch_loss.item(), "train/lr": optimizer.param_groups[0]["lr"],
-                        "train/grad_norm": float(gradient_norm), "epoch": epoch,
+                        "train/grad_norm": float(gradient_norm),
+                        "train/images_per_second": seen_images / elapsed,
+                        "system/peak_gpu_mb": peak,
+                        "epoch": epoch,
                     }, step=global_step)
 
         scheduler.step()
@@ -278,23 +290,39 @@ def train_lora(
                     f"epoch={epoch} train_loss={epoch_loss:.6f} "
                     f"validation_{config.objective.type}_loss={validation_loss:.6f}", flush=True,
                 )
+                if wandb_run is not None:
+                    wandb_run.log({
+                        "train/epoch_loss": epoch_loss,
+                        "validation/loss": validation_loss,
+                        "epoch": epoch,
+                    }, step=global_step)
             if should_sample:
                 set_adapter_scale(model, config.lora.inference_scale)
                 generated = _generate(config, model, autoencoder, latent_size, device)
                 set_adapter_scale(model, 1.0)
+                generated_path = output_dir / f"generated_epoch_{epoch:04d}.png"
                 save_image_grid(
-                    generated, output_dir / f"generated_epoch_{epoch:04d}.png",
+                    generated, generated_path,
                     columns=max(1, round(len(generated) ** 0.5)),
                 )
+                wandb_images = {"samples/generated": wandb.Image(str(generated_path))} \
+                    if wandb_run is not None else {}
                 if fixed_images is not None:
                     reconstruction = autoencoder.decode_from_diffusion(
                         autoencoder.encode_for_diffusion(fixed_images, sample_posterior=False)
                     )
+                    reconstruction_path = output_dir / f"validation_reconstructions_epoch_{epoch:04d}.png"
                     save_image_grid(
                         torch.cat((fixed_images, reconstruction), dim=0),
-                        output_dir / f"validation_reconstructions_epoch_{epoch:04d}.png",
+                        reconstruction_path,
                         columns=len(fixed_images),
                     )
+                    if wandb_run is not None:
+                        wandb_images["samples/validation_reconstructions"] = wandb.Image(
+                            str(reconstruction_path)
+                        )
+                if wandb_run is not None:
+                    wandb_run.log({**wandb_images, "epoch": epoch}, step=global_step)
 
         is_best = validation_loss is not None and validation_loss < best_validation
         if is_best:
@@ -323,17 +351,18 @@ def train_lora(
         }
         if is_best:
             checkpoints.save_best(state)
+        checkpoints.save_latest(state)
+        if experiment_directory is not None:
+            inference_yaml, inference_sbatch = ensure_inference_bundle(
+                config, checkpoints.latest_path, experiment_directory
+            )
+            print(
+                f"inference_yaml={inference_yaml} inference_sbatch={inference_sbatch}",
+                flush=True,
+            )
         if epoch % config.training.save_every == 0 or stopped_early or epoch == config.training.epochs:
             saved_path = checkpoints.save(state, epoch, is_best)
             print(f"checkpoint={saved_path}", flush=True)
-            if experiment_directory is not None:
-                inference_yaml, inference_sbatch = ensure_inference_bundle(
-                    config, checkpoints.latest_path, experiment_directory
-                )
-                print(
-                    f"inference_yaml={inference_yaml} inference_sbatch={inference_sbatch}",
-                    flush=True,
-                )
         if stopped_early:
             break
     if wandb_run is not None:

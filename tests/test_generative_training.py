@@ -1,6 +1,8 @@
 import tempfile
 import unittest
+from types import SimpleNamespace
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 import torch
@@ -13,12 +15,43 @@ from dragn.training.train_generative import train_generative
 from dragn.training.train_lora import train_lora
 
 
+class FakeWandbRun:
+    def __init__(self):
+        self.summary = {}
+        self.logged = []
+        self.finished = False
+
+    def log(self, payload, step=None):
+        self.logged.append((payload, step))
+
+    def finish(self):
+        self.finished = True
+
+
+class FakeWandb:
+    def __init__(self):
+        self.runs = []
+
+    def init(self, **_kwargs):
+        run = FakeWandbRun()
+        self.runs.append(run)
+        return run
+
+    @staticmethod
+    def Image(path):
+        return f"wandb-image:{path}"
+
+
 class GenerativeTrainingIntegrationTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         torch.set_num_threads(1)
 
     def test_real_data_ae_flow_dit_validation_and_generation(self):
+        fake_wandb = FakeWandb()
+        wandb_patch = patch.dict("sys.modules", {"wandb": fake_wandb})
+        wandb_patch.start()
+        self.addCleanup(wandb_patch.stop)
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
             data_dir = root / "data" / "SDSS" / "spiral"
@@ -58,6 +91,7 @@ class GenerativeTrainingIntegrationTest(unittest.TestCase):
                     "validation_batches": 1,
                     "log_every": 1,
                 },
+                "logging": {"wandb": True, "project": "test-dragn"},
             }
             ae_payload = {**shared, "task": "autoencoder"}
             ae_payload["experiment"] = {**shared["experiment"], "name": "test_ae"}
@@ -215,6 +249,16 @@ class GenerativeTrainingIntegrationTest(unittest.TestCase):
             self.assertTrue(ddpm_checkpoint.is_file())
             ddpm_saved = torch.load(ddpm_checkpoint, map_location="cpu", weights_only=False)
             self.assertEqual(ddpm_saved["objective"]["type"], "ddpm")
+            self.assertTrue(all(run.finished for run in fake_wandb.runs))
+            logged_keys = {
+                key
+                for run in fake_wandb.runs
+                for payload, _ in run.logged
+                for key in payload
+            }
+            self.assertIn("validation/reconstructions", logged_keys)
+            self.assertIn("samples/generated", logged_keys)
+            self.assertIn("validation/loss", logged_keys)
 
 
 if __name__ == "__main__":

@@ -89,6 +89,14 @@ def file_sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def wandb_run_id(config: ExperimentConfig, signature: str) -> str:
+    """Stable W&B identity so Slurm resumes append to one run."""
+    identity = (
+        f"{config.logging.project}:{config.experiment.name}:{signature}"
+    )
+    return hashlib.sha256(identity.encode("utf-8")).hexdigest()[:16]
+
+
 def capture_rng_state() -> dict:
     return {
         "python": random.getstate(),
@@ -147,13 +155,16 @@ class CheckpointManager:
     def save(self, state: dict, epoch: int, is_best: bool) -> Path:
         epoch_path = self.output_dir / f"checkpoint_epoch_{epoch:04d}.pt"
         torch.save(state, epoch_path)
-        torch.save(state, self.latest_path)
+        self.save_latest(state)
         if is_best:
             torch.save(state, self.best_path)
         checkpoints = sorted(self.output_dir.glob("checkpoint_epoch_*.pt"))
         for old_path in checkpoints[:-self.keep]:
             old_path.unlink()
         return epoch_path
+
+    def save_latest(self, state: dict) -> None:
+        torch.save(state, self.latest_path)
 
     def save_best(self, state: dict) -> None:
         torch.save(state, self.best_path)

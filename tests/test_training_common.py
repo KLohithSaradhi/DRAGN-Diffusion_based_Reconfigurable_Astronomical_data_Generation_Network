@@ -81,6 +81,13 @@ class TrainingCommonTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 manager.load_for_resume("auto", "wrong-signature", torch.device("cpu"))
 
+    def test_latest_can_be_saved_without_archiving_an_epoch(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            manager = CheckpointManager(Path(temporary_directory), keep=3)
+            manager.save_latest({"epoch": 1})
+            self.assertTrue(manager.latest_path.is_file())
+            self.assertEqual(list(manager.output_dir.glob("checkpoint_epoch_*.pt")), [])
+
     def test_architecture_change_changes_signature(self):
         first_payload = base_payload()
         second_payload = base_payload()

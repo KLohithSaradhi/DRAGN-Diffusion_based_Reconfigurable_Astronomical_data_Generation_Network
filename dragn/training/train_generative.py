@@ -24,6 +24,7 @@ from dragn.training.common import (
     file_sha256,
     make_epoch_scheduler,
     restore_rng_state,
+    wandb_run_id,
 )
 from dragn.training.inference_bundle import ensure_inference_bundle
 
@@ -175,9 +176,18 @@ def train_generative(
         wandb_run = wandb.init(
             project=config.logging.project,
             name=config.experiment.name,
+            id=wandb_run_id(config, signature),
+            resume="allow",
             config=config.model_dump(mode="json"),
             dir=str(output_dir / "wandb"),
         )
+        wandb_run.summary["model/parameters"] = sum(
+            parameter.numel() for parameter in model.parameters()
+        )
+        wandb_run.summary["model/tokens"] = (
+            latent_size // config.model.patch_size
+        ) ** 2
+        wandb_run.summary["checkpoints/autoencoder_sha256"] = ae_hash
     print(
         f"device={device} precision={config.training.precision} batch_size={config.data.batch_size} "
         f"accumulation={config.training.gradient_accumulation_steps} "
@@ -306,33 +316,44 @@ def train_generative(
         }
         if is_best:
             checkpoints.save_best(state)
+        checkpoints.save_latest(state)
+        if experiment_directory is not None:
+            inference_yaml, inference_sbatch = ensure_inference_bundle(
+                config, checkpoints.latest_path, experiment_directory
+            )
+            print(
+                f"inference_yaml={inference_yaml} inference_sbatch={inference_sbatch}",
+                flush=True,
+            )
         if epoch % config.training.save_every == 0 or stopped_early or epoch == config.training.epochs:
             saved_path = checkpoints.save(state, epoch, is_best)
             print(f"checkpoint={saved_path}", flush=True)
-            if experiment_directory is not None:
-                inference_yaml, inference_sbatch = ensure_inference_bundle(
-                    config, checkpoints.latest_path, experiment_directory
-                )
-                print(
-                    f"inference_yaml={inference_yaml} inference_sbatch={inference_sbatch}",
-                    flush=True,
-                )
         if epoch % config.training.sample_every == 0 or stopped_early or epoch == config.training.epochs:
             generated = _generate(config, evaluation_model, autoencoder, latent_size, device)
+            generated_path = output_dir / f"generated_epoch_{epoch:04d}.png"
             save_image_grid(
                 generated,
-                output_dir / f"generated_epoch_{epoch:04d}.png",
+                generated_path,
                 columns=max(1, round(len(generated) ** 0.5)),
             )
+            wandb_images = {"samples/generated": wandb.Image(str(generated_path))} \
+                if wandb_run is not None else {}
             if fixed_images is not None:
                 reconstruction = autoencoder.decode_from_diffusion(
                     autoencoder.encode_for_diffusion(fixed_images, sample_posterior=False)
                 )
+                reconstruction_path = output_dir / f"validation_reconstructions_epoch_{epoch:04d}.png"
                 save_image_grid(
                     torch.cat((fixed_images, reconstruction), dim=0),
-                    output_dir / f"validation_reconstructions_epoch_{epoch:04d}.png",
+                    reconstruction_path,
                     columns=len(fixed_images),
                 )
+                if wandb_run is not None:
+                    wandb_images["samples/validation_reconstructions"] = wandb.Image(
+                        str(reconstruction_path)
+                    )
+            if wandb_run is not None:
+                wandb_run.log({**wandb_images, "epoch": epoch}, step=global_step)
         if stopped_early:
             break
     if wandb_run is not None:

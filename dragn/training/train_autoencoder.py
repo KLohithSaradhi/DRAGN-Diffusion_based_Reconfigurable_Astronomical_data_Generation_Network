@@ -22,6 +22,7 @@ from dragn.training.common import (
     experiment_signature,
     make_epoch_scheduler,
     restore_rng_state,
+    wandb_run_id,
 )
 
 
@@ -110,6 +111,21 @@ def train_autoencoder(config: ExperimentConfig) -> Path:
         )
         print(f"resumed={checkpoints.latest_path} next_epoch={start_epoch}", flush=True)
 
+    wandb_run = None
+    if config.logging.wandb:
+        import wandb
+        wandb_run = wandb.init(
+            project=config.logging.project,
+            name=config.experiment.name,
+            id=wandb_run_id(config, signature),
+            resume="allow",
+            config=config.model_dump(mode="json"),
+            dir=str(output_dir / "wandb"),
+        )
+        wandb_run.summary["model/parameters"] = sum(
+            parameter.numel() for parameter in model.parameters()
+        )
+
     print(
         f"device={device} precision={config.training.precision} batch_size={config.data.batch_size} "
         f"accumulation={config.training.gradient_accumulation_steps} "
@@ -165,6 +181,18 @@ def train_autoencoder(config: ExperimentConfig) -> Path:
                     f"peak_gpu_mb={peak:.1f}",
                     flush=True,
                 )
+                if wandb_run is not None:
+                    wandb_run.log({
+                        "train/total_loss": losses.total.item(),
+                        "train/reconstruction_loss": losses.reconstruction.item(),
+                        "train/kl": losses.kl.item(),
+                        "train/kl_weight": losses.kl_weight,
+                        "train/lr": optimizer.param_groups[0]["lr"],
+                        "train/grad_norm": float(gradient_norm),
+                        "train/images_per_second": seen_images / elapsed,
+                        "system/peak_gpu_mb": peak,
+                        "epoch": epoch,
+                    }, step=global_step)
             if config.training.max_steps and global_step >= config.training.max_steps:
                 stopped_early = True
                 break
@@ -184,6 +212,13 @@ def train_autoencoder(config: ExperimentConfig) -> Path:
                 f"validation_l1={validation_loss:.6f} latent_scale={model.latent_scale.item():.6f}",
                 flush=True,
             )
+            if wandb_run is not None:
+                wandb_run.log({
+                    "train/epoch_loss": epoch_loss / max(seen_images, 1),
+                    "validation/l1": validation_loss,
+                    "validation/latent_scale": float(model.latent_scale.item()),
+                    "epoch": epoch,
+                }, step=global_step)
         is_best = validation_loss is not None and validation_loss < best_validation
         if is_best:
             best_validation = validation_loss
@@ -205,6 +240,7 @@ def train_autoencoder(config: ExperimentConfig) -> Path:
         }
         if is_best:
             checkpoints.save_best(state)
+        checkpoints.save_latest(state)
         if epoch % config.training.save_every == 0 or stopped_early or epoch == config.training.epochs:
             saved_path = checkpoints.save(state, epoch, is_best)
             print(f"checkpoint={saved_path}", flush=True)
@@ -214,11 +250,19 @@ def train_autoencoder(config: ExperimentConfig) -> Path:
             reconstruction = evaluation_model.decode_from_diffusion(
                 evaluation_model.encode_for_diffusion(fixed_images, sample_posterior=False)
             )
+            reconstruction_path = output_dir / f"reconstructions_epoch_{epoch:04d}.png"
             save_image_grid(
                 torch.cat((fixed_images, reconstruction), dim=0),
-                output_dir / f"reconstructions_epoch_{epoch:04d}.png",
+                reconstruction_path,
                 columns=len(fixed_images),
             )
+            if wandb_run is not None:
+                wandb_run.log({
+                    "validation/reconstructions": wandb.Image(str(reconstruction_path)),
+                    "epoch": epoch,
+                }, step=global_step)
         if stopped_early:
             break
+    if wandb_run is not None:
+        wandb_run.finish()
     return checkpoints.latest_path
