@@ -126,6 +126,8 @@ class TrainingSection(StrictModel):
     save_every: int = Field(default=10, gt=0)
     sample_every: int = Field(default=10, gt=0)
     log_every: int = Field(default=10, gt=0)
+    max_steps: int | None = Field(default=None, gt=0)
+    validation_batches: int | None = Field(default=None, gt=0)
 
 
 class SamplingSection(StrictModel):

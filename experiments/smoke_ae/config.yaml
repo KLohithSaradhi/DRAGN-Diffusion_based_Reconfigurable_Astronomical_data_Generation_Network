@@ -9,7 +9,7 @@ experiment:
 
 data:
   dataset: astro
-  root_dir: ./data/smoke_astro
+  root_dir: /home1/lkanduku/DRAGN-Diffusion_based_Reconfigurable_Astronomical_data_Generation_Network/ProcessedData
   layout: instrument_class
   image_size: 64
   channels: 3
@@ -44,6 +44,8 @@ training:
   save_every: 1
   sample_every: 1
   log_every: 1
+  max_steps: 20
+  validation_batches: 2
 
 logging:
   wandb: false
