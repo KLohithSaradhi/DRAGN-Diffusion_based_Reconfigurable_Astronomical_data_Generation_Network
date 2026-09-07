@@ -24,8 +24,12 @@ class LoRALinear(nn.Module):
             )
         self.base = base
         self.base.requires_grad_(False)
-        self.lora_a = nn.Parameter(torch.empty(rank, base.in_features))
-        self.lora_b = nn.Parameter(torch.zeros(base.out_features, rank))
+        self.lora_a = nn.Parameter(
+            base.weight.new_empty((rank, base.in_features))
+        )
+        self.lora_b = nn.Parameter(
+            base.weight.new_zeros((base.out_features, rank))
+        )
         self.dropout = nn.Dropout(dropout)
         self.scaling = alpha / rank
         self.adapter_scale = 1.0

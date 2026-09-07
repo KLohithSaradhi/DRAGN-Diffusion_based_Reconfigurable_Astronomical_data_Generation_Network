@@ -77,6 +77,36 @@ class LoRATests(unittest.TestCase):
         self.assertNotIsInstance(model.blocks[0].attention.qkv, LoRALinear)
         self.assertIsInstance(model.blocks[0].mlp.fc1, LoRALinear)
 
+    def test_adapters_inherit_wrapped_layer_device_and_dtype(self):
+        meta_wrapper = LoRALinear(
+            torch.nn.Linear(4, 4, device="meta"), rank=2, alpha=2, dropout=0.0
+        )
+        self.assertEqual(meta_wrapper.lora_a.device, torch.device("meta"))
+        self.assertEqual(meta_wrapper.lora_b.device, torch.device("meta"))
+
+        devices = [torch.device("cpu")]
+        if torch.cuda.is_available():
+            devices.append(torch.device("cuda"))
+        for device in devices:
+            with self.subTest(device=device):
+                model = self._model().to(device=device, dtype=torch.float64)
+                inject_lora(
+                    model,
+                    LoRASection(
+                        base_checkpoint="base.pt", preset="full_lora",
+                        rank=4, alpha=4,
+                    ),
+                )
+                for parameter in adapter_parameters(model):
+                    self.assertEqual(parameter.device, device)
+                    self.assertEqual(parameter.dtype, torch.float64)
+                output = model(
+                    torch.randn(2, 2, 4, 4, device=device, dtype=torch.float64),
+                    torch.rand(2, device=device),
+                )
+                self.assertEqual(output.device, device)
+                self.assertEqual(output.dtype, torch.float64)
+
 
 if __name__ == "__main__":
     unittest.main()
