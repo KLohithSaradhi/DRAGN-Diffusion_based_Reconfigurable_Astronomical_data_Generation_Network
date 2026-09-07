@@ -108,11 +108,21 @@ class ObjectiveSection(StrictModel):
 class LoRASection(StrictModel):
     enabled: bool = True
     base_checkpoint: Path
-    rank: int = Field(default=16, gt=0)
-    alpha: float = Field(default=16.0, gt=0)
+    base_weights: Literal["ema", "raw"] = "ema"
+    preset: Literal["full_lora", "proj_lora", "mlp_lora"] = "full_lora"
+    rank: int = Field(default=8, gt=0)
+    alpha: float = Field(default=8.0, gt=0)
     dropout: float = Field(default=0.0, ge=0.0, lt=1.0)
-    targets: list[Literal["attention.qkv", "attention.proj", "mlp.fc1", "mlp.fc2"]] = \
-        Field(default_factory=lambda: ["attention.qkv", "attention.proj", "mlp.fc1", "mlp.fc2"], min_length=1)
+    inference_scale: float = Field(default=1.0, ge=0.0)
+
+    @property
+    def targets(self) -> tuple[str, ...]:
+        presets = {
+            "full_lora": ("attention.qkv", "attention.proj", "mlp.fc1", "mlp.fc2"),
+            "proj_lora": ("attention.proj", "mlp.fc1", "mlp.fc2"),
+            "mlp_lora": ("mlp.fc1", "mlp.fc2"),
+        }
+        return presets[self.preset]
 
 
 class TrainingSection(StrictModel):

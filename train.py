@@ -5,6 +5,7 @@ import argparse
 from dragn.config import load_config
 from dragn.training.train_autoencoder import train_autoencoder
 from dragn.training.train_generative import train_generative
+from dragn.training.train_lora import train_lora
 
 
 def main() -> None:
@@ -18,7 +19,10 @@ def main() -> None:
     if config.task == "base":
         train_generative(config)
         return
-    raise NotImplementedError(f"task={config.task!r} is scheduled for a later DRAGN v2 step")
+    if config.task == "lora":
+        train_lora(config)
+        return
+    raise ValueError(f"Unsupported task: {config.task!r}")
 
 
 if __name__ == "__main__":

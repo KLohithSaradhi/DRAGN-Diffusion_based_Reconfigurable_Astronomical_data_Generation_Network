@@ -277,6 +277,7 @@ def train_generative(config: ExperimentConfig) -> Path:
             "task": "base",
             "signature": signature,
             "objective": config.objective.model_dump(mode="json"),
+            "ae_checkpoint_hash": ae_hash,
             "epoch": epoch,
             "global_step": global_step,
             "best_validation": best_validation,

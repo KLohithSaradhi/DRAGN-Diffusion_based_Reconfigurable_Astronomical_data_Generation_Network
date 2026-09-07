@@ -1,0 +1,95 @@
+schema_version: 2
+task: lora
+
+experiment:
+  name: smoke_lora_spiral_sdss_proj_lora
+  output_dir: ./results
+  seed: 42
+  resume: auto
+
+data:
+  dataset: astro
+  root_dir: /home1/lkanduku/DRAGN-Diffusion_based_Reconfigurable_Astronomical_data_Generation_Network/ProcessedData
+  layout: instrument_class
+  image_size: 512
+  channels: 3
+  transform: astro_standard
+  batch_size: 1
+  num_workers: 0
+  validation_fraction: 0.1
+  filter:
+    instrument: SDSS
+    class_name: spiral
+
+autoencoder:
+  enabled: true
+  architecture: autoencoder_kl
+  checkpoint: ./results/smoke_ae/checkpoint.pt
+  latent_channels: 16
+  downsample_factor: 8
+  base_channels: 32
+  channel_multipliers: [1, 2, 4, 4]
+  num_res_blocks: 2
+  loss:
+    reconstruction: l1
+    reconstruction_weight: 1.0
+    kl_weight: 0.000001
+    kl_warmup_fraction: 0.1
+    perceptual_weight: 0.0
+
+model:
+  architecture: dit
+  patch_size: 2
+  hidden_size: 256
+  depth: 6
+  num_heads: 8
+  mlp_ratio: 4.0
+  positional_embedding: sincos_2d
+  dropout: 0.0
+
+objective:
+  type: flow
+  prediction: velocity
+  timesteps: 1000
+  schedule: cosine
+  source_std: 1.0
+  time_distribution: uniform
+
+lora:
+  enabled: true
+  base_checkpoint: ./results/smoke_flow/latest.pt
+  base_weights: ema
+  preset: proj_lora
+  rank: 8
+  alpha: 8.0
+  dropout: 0.0
+  inference_scale: 1.0
+
+training:
+  epochs: 1
+  optimizer: adamw
+  lr: 0.0001
+  weight_decay: 0.0
+  precision: fp32
+  grad_clip: 1.0
+  ema_decay: 0.9999
+  save_every: 1
+  sample_every: 1
+  validate_every: 1
+  log_every: 1
+  max_steps: 10
+  validation_batches: 1
+  gradient_accumulation_steps: 1
+  lr_schedule: cosine
+  warmup_epochs: 0
+  keep_epoch_checkpoints: 3
+
+sampling:
+  method: euler
+  steps: 10
+  num_samples: 4
+  seed: 123
+
+logging:
+  wandb: false
+  project: dragn

@@ -46,7 +46,13 @@ def lora_payload() -> dict:
     }
     payload["objective"] = {"type": "flow", "prediction": "velocity", "source_std": 1.0}
     payload["sampling"] = {"method": "euler", "steps": 20}
-    payload["lora"] = {"base_checkpoint": "./results/smoke_flow/best.pt", "rank": 16, "alpha": 16}
+    payload["lora"] = {
+        "base_checkpoint": "./results/smoke_flow/best.pt",
+        "base_weights": "ema",
+        "preset": "proj_lora",
+        "rank": 8,
+        "alpha": 8,
+    }
     return payload
 
 
@@ -59,6 +65,7 @@ class ConfigTests(unittest.TestCase):
         config = ExperimentConfig.model_validate(lora_payload())
         self.assertEqual(config.data.filter.instrument, "SDSS")
         self.assertEqual(config.data.filter.class_name, "spiral")
+        self.assertEqual(config.lora.targets, ("attention.proj", "mlp.fc1", "mlp.fc2"))
 
     def test_unknown_keys_are_rejected(self):
         payload = autoencoder_payload()

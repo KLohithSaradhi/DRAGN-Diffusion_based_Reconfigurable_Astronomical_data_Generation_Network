@@ -9,6 +9,7 @@ from PIL import Image
 from dragn.config import ExperimentConfig
 from dragn.training.train_autoencoder import train_autoencoder
 from dragn.training.train_generative import train_generative
+from dragn.training.train_lora import train_lora
 
 
 class GenerativeTrainingIntegrationTest(unittest.TestCase):
@@ -85,6 +86,48 @@ class GenerativeTrainingIntegrationTest(unittest.TestCase):
             self.assertEqual(saved["objective"]["type"], "flow")
             self.assertIn("ema_state", saved)
             self.assertTrue((checkpoint.parent / "best.pt").is_file())
+
+            lora_payload = {**base_payload, "task": "lora"}
+            lora_payload["experiment"] = {
+                **shared["experiment"], "name": "test_lora", "resume": "never",
+            }
+            lora_payload["data"] = {
+                **base_payload["data"],
+                "filter": {"instrument": "SDSS", "class_name": "spiral"},
+            }
+            lora_payload["lora"] = {
+                "base_checkpoint": str(checkpoint),
+                "base_weights": "ema",
+                "preset": "full_lora",
+                "rank": 4,
+                "alpha": 4,
+                "inference_scale": 1.0,
+            }
+            lora_checkpoint = train_lora(ExperimentConfig.model_validate(lora_payload))
+            self.assertTrue(lora_checkpoint.is_file())
+            self.assertTrue((lora_checkpoint.parent / "generated_epoch_0001.png").is_file())
+            lora_saved = torch.load(lora_checkpoint, map_location="cpu", weights_only=False)
+            self.assertEqual(lora_saved["task"], "lora")
+            self.assertEqual(lora_saved["preset"], "full_lora")
+            self.assertNotIn("model_state", lora_saved)
+            self.assertTrue(lora_saved["adapter_state"])
+            self.assertTrue(all(
+                name.endswith((".lora_a", ".lora_b"))
+                for name in lora_saved["adapter_state"]
+            ))
+            self.assertTrue(any(
+                torch.count_nonzero(value).item() > 0
+                for name, value in lora_saved["adapter_state"].items()
+                if name.endswith(".lora_b")
+            ))
+            lora_resume_payload = {**lora_payload}
+            lora_resume_payload["experiment"] = {
+                **lora_payload["experiment"], "resume": "required",
+            }
+            resumed_lora = train_lora(
+                ExperimentConfig.model_validate(lora_resume_payload)
+            )
+            self.assertEqual(resumed_lora, lora_checkpoint)
 
             resume_payload = {**base_payload}
             resume_payload["experiment"] = {

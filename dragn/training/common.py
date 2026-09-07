@@ -40,7 +40,11 @@ class ExponentialMovingAverage:
         self.model.load_state_dict(state["model"], strict=True)
 
 
-def experiment_signature(config: ExperimentConfig, ae_checkpoint_hash: str | None = None) -> str:
+def experiment_signature(
+    config: ExperimentConfig,
+    ae_checkpoint_hash: str | None = None,
+    base_checkpoint_hash: str | None = None,
+) -> str:
     payload = {
         "schema_version": config.schema_version,
         "task": config.task,
@@ -54,7 +58,13 @@ def experiment_signature(config: ExperimentConfig, ae_checkpoint_hash: str | Non
         "ae_checkpoint_hash": ae_checkpoint_hash,
         "model": config.model.model_dump(mode="json") if config.model else None,
         "objective": config.objective.model_dump(mode="json") if config.objective else None,
-        "lora": config.lora.model_dump(mode="json") if config.lora else None,
+        "lora": (
+            config.lora.model_dump(
+                mode="json", exclude={"base_checkpoint", "inference_scale"}
+            )
+            if config.lora else None
+        ),
+        "base_checkpoint_hash": base_checkpoint_hash,
         "optimization": {
             "optimizer": config.training.optimizer,
             "lr": config.training.lr,
