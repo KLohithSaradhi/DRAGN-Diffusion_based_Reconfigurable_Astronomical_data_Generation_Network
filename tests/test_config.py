@@ -2,7 +2,7 @@ import unittest
 
 from pydantic import ValidationError
 
-from dragn.config import ExperimentConfig
+from dragn.config import ExperimentConfig, InferenceConfig
 
 
 def autoencoder_payload() -> dict:
@@ -97,6 +97,24 @@ class ConfigTests(unittest.TestCase):
         payload["data"]["filter"] = None
         with self.assertRaises(ValidationError):
             ExperimentConfig.model_validate(payload)
+
+    def test_inference_adapter_names_must_be_unique(self):
+        payload = {
+            "schema_version": 2,
+            "task": "inference",
+            "experiment": {"name": "compare"},
+            "inference": {
+                "autoencoder_checkpoint": "ae.pt",
+                "base_checkpoint": "base.pt",
+                "adapters": [
+                    {"name": "spiral", "checkpoint": "one.pt"},
+                    {"name": "spiral", "checkpoint": "two.pt"},
+                ],
+            },
+            "sampling": {"method": "euler", "steps": 10},
+        }
+        with self.assertRaises(ValidationError):
+            InferenceConfig.model_validate(payload)
 
 
 if __name__ == "__main__":

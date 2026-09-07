@@ -1,0 +1,32 @@
+schema_version: 2
+task: inference
+
+experiment:
+  name: smoke_inference_spiral_sdss
+  output_dir: ./results
+  seed: 42
+  resume: never
+
+inference:
+  autoencoder_checkpoint: ./results/smoke_ae/checkpoint.pt
+  base_checkpoint: ./results/smoke_flow/latest.pt
+  base_weights: raw
+  adapters:
+    - name: full_lora
+      checkpoint: ./results/smoke_lora_spiral_sdss_full_lora/latest.pt
+      weights: raw
+      scale: 1.0
+    - name: proj_lora
+      checkpoint: ./results/smoke_lora_spiral_sdss_proj_lora/latest.pt
+      weights: raw
+      scale: 1.0
+    - name: mlp_lora
+      checkpoint: ./results/smoke_lora_spiral_sdss_mlp_lora/latest.pt
+      weights: raw
+      scale: 1.0
+
+sampling:
+  method: euler
+  steps: 10
+  num_samples: 4
+  seed: 123

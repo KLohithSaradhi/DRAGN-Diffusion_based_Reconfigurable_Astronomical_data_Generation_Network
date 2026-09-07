@@ -157,6 +157,35 @@ class LoggingSection(StrictModel):
     project: str = "dragn"
 
 
+class InferenceAdapter(StrictModel):
+    name: str = Field(min_length=1, pattern=r"^[a-z0-9][a-z0-9_-]*$")
+    checkpoint: Path
+    weights: Literal["ema", "raw"] = "ema"
+    scale: float = Field(default=1.0, ge=0.0)
+
+
+class InferenceSection(StrictModel):
+    autoencoder_checkpoint: Path
+    base_checkpoint: Path
+    base_weights: Literal["ema", "raw"] = "ema"
+    adapters: list[InferenceAdapter] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_unique_adapter_names(self) -> "InferenceSection":
+        names = [adapter.name for adapter in self.adapters]
+        if len(names) != len(set(names)):
+            raise ValueError("inference adapter names must be unique")
+        return self
+
+
+class InferenceConfig(StrictModel):
+    schema_version: Literal[2]
+    task: Literal["inference"]
+    experiment: ExperimentSection
+    inference: InferenceSection
+    sampling: SamplingSection
+
+
 class ExperimentConfig(StrictModel):
     schema_version: Literal[2]
     task: Literal["autoencoder", "base", "lora"]
@@ -217,11 +246,16 @@ class ExperimentConfig(StrictModel):
         return self
 
 
-def load_config(path: str | Path) -> ExperimentConfig:
+Config = ExperimentConfig | InferenceConfig
+
+
+def load_config(path: str | Path) -> Config:
     """Load and strictly validate a v2 experiment YAML file."""
     config_path = Path(path)
     with config_path.open("r", encoding="utf-8") as handle:
         payload = yaml.safe_load(handle)
     if not isinstance(payload, dict):
         raise ValueError(f"{config_path} must contain a YAML mapping")
+    if payload.get("task") == "inference":
+        return InferenceConfig.model_validate(payload)
     return ExperimentConfig.model_validate(payload)

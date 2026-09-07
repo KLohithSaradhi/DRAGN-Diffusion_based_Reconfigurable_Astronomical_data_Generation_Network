@@ -48,7 +48,7 @@ def _load_autoencoder(config: ExperimentConfig, device: torch.device) -> tuple[A
         raise FileNotFoundError(f"Autoencoder checkpoint not found: {checkpoint_path}")
     checkpoint_hash = file_sha256(checkpoint_path)
     autoencoder = build_autoencoder(config.autoencoder, config.data.channels).to(device)
-    checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
+    checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
     if checkpoint.get("schema_version") != 2 or checkpoint.get("task") != "autoencoder":
         raise ValueError(f"Not a DRAGN v2 autoencoder checkpoint: {checkpoint_path}")
     autoencoder_state = (

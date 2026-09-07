@@ -58,7 +58,7 @@ objective:
 lora:
   enabled: true
   base_checkpoint: ./results/smoke_flow/latest.pt
-  base_weights: ema
+  base_weights: raw
   preset: full_lora
   rank: 8
   alpha: 8.0
@@ -72,7 +72,7 @@ training:
   weight_decay: 0.0
   precision: fp32
   grad_clip: 1.0
-  ema_decay: 0.9999
+  ema_decay: null
   save_every: 1
   sample_every: 1
   validate_every: 1

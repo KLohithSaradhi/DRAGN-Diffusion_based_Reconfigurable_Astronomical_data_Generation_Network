@@ -6,7 +6,8 @@ import numpy as np
 import torch
 from PIL import Image
 
-from dragn.config import ExperimentConfig
+from dragn.config import ExperimentConfig, InferenceConfig
+from dragn.training.inference import run_inference
 from dragn.training.train_autoencoder import train_autoencoder
 from dragn.training.train_generative import train_generative
 from dragn.training.train_lora import train_lora
@@ -128,6 +129,54 @@ class GenerativeTrainingIntegrationTest(unittest.TestCase):
                 ExperimentConfig.model_validate(lora_resume_payload)
             )
             self.assertEqual(resumed_lora, lora_checkpoint)
+
+            inference_config = InferenceConfig.model_validate({
+                "schema_version": 2,
+                "task": "inference",
+                "experiment": {
+                    "name": "test_inference",
+                    "output_dir": str(root / "results"),
+                    "seed": 4,
+                    "resume": "never",
+                },
+                "inference": {
+                    "autoencoder_checkpoint": str(ae_checkpoint),
+                    "base_checkpoint": str(checkpoint),
+                    "base_weights": "ema",
+                    "adapters": [{
+                        "name": "spiral_sdss",
+                        "checkpoint": str(lora_checkpoint),
+                        "weights": "raw",
+                        "scale": 0.0,
+                    }],
+                },
+                "sampling": base_payload["sampling"],
+            })
+            comparison = run_inference(inference_config)
+            self.assertTrue(comparison.is_file())
+            self.assertTrue((comparison.parent / "00_base.png").is_file())
+            self.assertTrue((comparison.parent / "01_spiral_sdss.png").is_file())
+            self.assertTrue((comparison.parent / "metadata.json").is_file())
+            with Image.open(comparison.parent / "00_base.png") as base_grid:
+                base_pixels = np.asarray(base_grid).copy()
+            with Image.open(comparison.parent / "01_spiral_sdss.png") as adapter_grid:
+                adapter_pixels = np.asarray(adapter_grid).copy()
+            np.testing.assert_array_equal(base_pixels, adapter_pixels)
+
+            incompatible_path = root / "incompatible_lora.pt"
+            incompatible = torch.load(lora_checkpoint, map_location="cpu", weights_only=False)
+            incompatible["base_checkpoint_hash"] = "not-the-base-hash"
+            torch.save(incompatible, incompatible_path)
+            bad_adapter = inference_config.inference.adapters[0].model_copy(
+                update={"checkpoint": incompatible_path}
+            )
+            bad_inference = inference_config.inference.model_copy(
+                update={"adapters": [bad_adapter]}
+            )
+            with self.assertRaisesRegex(ValueError, "base checkpoint hash"):
+                run_inference(inference_config.model_copy(
+                    update={"inference": bad_inference}
+                ))
 
             resume_payload = {**base_payload}
             resume_payload["experiment"] = {

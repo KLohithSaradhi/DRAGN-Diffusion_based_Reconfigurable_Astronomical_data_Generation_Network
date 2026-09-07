@@ -54,7 +54,12 @@ def _autocast(device: torch.device, precision: str):
     return torch.autocast(device_type=device.type, dtype=dtype)
 
 
-def _load_frozen_base(config: ExperimentConfig, device: torch.device, latent_size: int):
+def _load_frozen_base(
+    config: ExperimentConfig,
+    device: torch.device,
+    latent_size: int,
+    ae_hash: str,
+):
     assert config.lora is not None and config.model is not None and config.objective is not None
     path = config.lora.base_checkpoint
     if not path.is_file():
@@ -75,6 +80,17 @@ def _load_frozen_base(config: ExperimentConfig, device: torch.device, latent_siz
         mismatches.append("image geometry")
     if mismatches:
         raise ValueError("LoRA/base checkpoint mismatch: " + ", ".join(mismatches))
+    recorded_ae_hash = checkpoint.get("ae_checkpoint_hash")
+    if recorded_ae_hash is None:
+        recorded_path = saved.autoencoder.checkpoint
+        if recorded_path is None or not recorded_path.is_file():
+            raise ValueError(
+                "Base checkpoint predates embedded AE hashes and its recorded AE path "
+                "cannot be verified"
+            )
+        recorded_ae_hash = file_sha256(recorded_path)
+    if recorded_ae_hash != ae_hash:
+        raise ValueError("LoRA autoencoder checkpoint does not match the base DiT checkpoint")
 
     model = build_dit(config.model, config.autoencoder.latent_channels, latent_size).to(device)
     if config.lora.base_weights == "ema":
@@ -100,7 +116,9 @@ def train_lora(config: ExperimentConfig) -> Path:
     train_loader, validation_loader = create_loaders(config.data, config.experiment.seed)
     autoencoder, ae_hash = _load_autoencoder(config, device)
     latent_size = config.data.image_size // autoencoder.downsample_factor
-    model, base_hash, base_checkpoint = _load_frozen_base(config, device, latent_size)
+    model, base_hash, base_checkpoint = _load_frozen_base(
+        config, device, latent_size, ae_hash
+    )
     replaced = inject_lora(model, config.lora)
     trainable = list(adapter_parameters(model))
     if not trainable:

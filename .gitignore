@@ -4,6 +4,8 @@ MNIST/*
 *.png
 *.gz
 __pycache__/*
+**/__pycache__/
+*.py[cod]
 *.pth
 *.ipynb
 results/*
