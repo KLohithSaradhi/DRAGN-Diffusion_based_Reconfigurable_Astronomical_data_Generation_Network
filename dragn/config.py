@@ -36,6 +36,14 @@ class DataSection(StrictModel):
     num_workers: int = Field(default=4, ge=0)
     validation_fraction: float = Field(default=0.1, ge=0.0, lt=1.0)
     filter: DataFilter | None = None
+    manifest: Path | None = None
+    manifest_split: Literal["train", "validation", "test"] | None = None
+
+    @model_validator(mode="after")
+    def validate_manifest_selection(self) -> "DataSection":
+        if (self.manifest is None) != (self.manifest_split is None):
+            raise ValueError("data.manifest and data.manifest_split must be specified together")
+        return self
 
 
 class AutoencoderLoss(StrictModel):

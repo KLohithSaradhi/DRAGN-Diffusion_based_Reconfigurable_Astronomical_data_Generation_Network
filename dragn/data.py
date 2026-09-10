@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import random
+import csv
 from pathlib import Path
 
 import numpy as np
@@ -33,7 +34,19 @@ class ImageDataset(Dataset[tuple[Tensor, dict[str, str]]]):
         if not root.is_dir():
             raise FileNotFoundError(f"Dataset root does not exist: {root}")
         samples: list[tuple[Path, str, str]] = []
-        if self.config.layout == "instrument_class":
+        if self.config.manifest is not None:
+            manifest = self.config.manifest.expanduser()
+            if not manifest.is_file():
+                raise FileNotFoundError(f"Dataset manifest does not exist: {manifest}")
+            with manifest.open("r", encoding="utf-8", newline="") as handle:
+                for row in csv.DictReader(handle):
+                    if row.get("split") != self.config.manifest_split:
+                        continue
+                    path = Path(row["path"]).expanduser()
+                    if not path.is_absolute():
+                        path = manifest.parent / path
+                    samples.append((path, row["instrument"], row["class_name"]))
+        elif self.config.layout == "instrument_class":
             for instrument_dir in sorted(path for path in root.iterdir() if path.is_dir()):
                 for class_dir in sorted(path for path in instrument_dir.iterdir() if path.is_dir()):
                     for image_path in sorted(path for path in class_dir.iterdir() if path.is_file()):
@@ -50,6 +63,11 @@ class ImageDataset(Dataset[tuple[Tensor, dict[str, str]]]):
                 sample for sample in samples
                 if sample[1] == requested.instrument and sample[2] == requested.class_name
             ]
+        missing = [str(path) for path, _, _ in samples if not path.is_file()]
+        if missing:
+            raise FileNotFoundError(
+                f"Manifest references {len(missing)} missing image(s); first missing: {missing[0]}"
+            )
         return samples
 
     def __len__(self) -> int:

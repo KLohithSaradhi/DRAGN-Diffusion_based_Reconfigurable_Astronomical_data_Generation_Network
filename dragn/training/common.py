@@ -53,6 +53,12 @@ def experiment_signature(
             "image_size": config.data.image_size,
             "channels": config.data.channels,
             "filter": config.data.filter.model_dump(mode="json") if config.data.filter else None,
+            "manifest_split": config.data.manifest_split,
+            "manifest_sha256": (
+                file_sha256(config.data.manifest)
+                if config.data.manifest is not None and config.data.manifest.is_file()
+                else None
+            ),
         },
         "autoencoder": config.autoencoder.model_dump(mode="json", exclude={"checkpoint"}),
         "ae_checkpoint_hash": ae_checkpoint_hash,

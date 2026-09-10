@@ -1,0 +1,15 @@
+schema_version: 1
+task: classification
+target: object
+experiment: {name: object_subaru_dragn, output_dir: ./results/classification, seed: 42}
+data:
+  manifest: ./benchmark_data/real_splits.csv
+  synthetic_manifest: ./benchmark_data/synthetic/manifest.csv
+  instrument_filter: SUBARU
+  image_size: 224
+  batch_size: 32
+  num_workers: 4
+  augment: true
+model: {architecture: resnet18, weights: imagenet, fine_tune: all}
+training: {epochs: 50, optimizer: adamw, lr: 0.0001, weight_decay: 0.0001, early_stopping_patience: 8, precision: fp32}
+logging: {wandb: false, project: dragn-classification}

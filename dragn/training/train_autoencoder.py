@@ -20,6 +20,7 @@ from dragn.training.common import (
     ExponentialMovingAverage,
     capture_rng_state,
     experiment_signature,
+    file_sha256,
     make_epoch_scheduler,
     restore_rng_state,
     wandb_run_id,
@@ -92,6 +93,9 @@ def train_autoencoder(config: ExperimentConfig) -> Path:
         enabled=device.type == "cuda" and config.training.precision == "fp16",
     )
     signature = experiment_signature(config)
+    data_manifest_hash = (
+        file_sha256(config.data.manifest) if config.data.manifest is not None else None
+    )
     checkpoints = CheckpointManager(output_dir, config.training.keep_epoch_checkpoints)
     resume = checkpoints.load_for_resume(config.experiment.resume, signature, device)
     start_epoch, global_step, best_validation = 1, 0, float("inf")
@@ -226,6 +230,7 @@ def train_autoencoder(config: ExperimentConfig) -> Path:
             "schema_version": 2,
             "task": "autoencoder",
             "signature": signature,
+            "data_manifest_hash": data_manifest_hash,
             "epoch": epoch,
             "global_step": global_step,
             "best_validation": best_validation,

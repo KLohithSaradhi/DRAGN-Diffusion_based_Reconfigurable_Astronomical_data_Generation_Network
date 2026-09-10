@@ -1,0 +1,17 @@
+schema_version: 1
+task: synthetic_export
+output_dir: ./benchmark_data/synthetic/images
+manifest: ./benchmark_data/synthetic/manifest.csv
+real_manifest: ./benchmark_data/real_splits.csv
+autoencoder_checkpoint: ./results/benchmark_ae/best.pt
+base_checkpoint: ./results/benchmark_flow/best.pt
+base_weights: ema
+ratio: 1.0
+batch_size: 16
+sampling: {method: euler, steps: 50, num_samples: 16, seed: 123}
+variants:
+  - {name: sdss_lens, instrument: SDSS, class_name: lens, checkpoint: ./results/benchmark_flow_lens_sdss_full_lora/best.pt, weights: ema, scale: 1.0}
+  - {name: sdss_spiral, instrument: SDSS, class_name: spiral, checkpoint: ./results/benchmark_flow_spiral_sdss_full_lora/best.pt, weights: ema, scale: 1.0}
+  - {name: subaru_lens, instrument: SUBARU, class_name: lens, checkpoint: ./results/benchmark_flow_lens_subaru_full_lora/best.pt, weights: ema, scale: 1.0}
+  - {name: subaru_spiral, instrument: SUBARU, class_name: spiral, checkpoint: ./results/benchmark_flow_spiral_subaru_full_lora/best.pt, weights: ema, scale: 1.0}
+

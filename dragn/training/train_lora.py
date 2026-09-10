@@ -144,6 +144,9 @@ def train_lora(
         if config.objective.type == "ddpm" else None
     )
     signature = experiment_signature(config, ae_hash, base_hash)
+    data_manifest_hash = (
+        file_sha256(config.data.manifest) if config.data.manifest is not None else None
+    )
     checkpoints = CheckpointManager(output_dir, config.training.keep_epoch_checkpoints)
     resume = checkpoints.load_for_resume(config.experiment.resume, signature, device)
     start_epoch, global_step, best_validation = 1, 0, float("inf")
@@ -331,6 +334,7 @@ def train_lora(
             "schema_version": 2,
             "task": "lora",
             "signature": signature,
+            "data_manifest_hash": data_manifest_hash,
             "objective": config.objective.model_dump(mode="json"),
             "preset": config.lora.preset,
             "targets": list(config.lora.targets),

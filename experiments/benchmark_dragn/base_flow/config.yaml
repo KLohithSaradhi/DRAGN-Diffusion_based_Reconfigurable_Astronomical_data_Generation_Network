@@ -1,0 +1,47 @@
+schema_version: 2
+task: base
+experiment: {name: benchmark_flow, output_dir: ./results, seed: 42, resume: auto}
+data:
+  dataset: astro
+  root_dir: /home1/lkanduku/DRAGN-Diffusion_based_Reconfigurable_Astronomical_data_Generation_Network/ProcessedData
+  layout: instrument_class
+  image_size: 512
+  channels: 3
+  transform: astro_standard
+  batch_size: 2
+  num_workers: 8
+  validation_fraction: 0.1
+  manifest: ./benchmark_data/real_splits.csv
+  manifest_split: train
+autoencoder:
+  enabled: true
+  architecture: autoencoder_kl
+  checkpoint: ./results/benchmark_ae/best.pt
+  latent_channels: 16
+  downsample_factor: 8
+  base_channels: 64
+  channel_multipliers: [1, 2, 4, 4]
+  num_res_blocks: 2
+  loss: {reconstruction: l1, reconstruction_weight: 1.0, kl_weight: 0.000001, kl_warmup_fraction: 0.1, perceptual_weight: 0.0}
+model: {architecture: dit, patch_size: 2, hidden_size: 768, depth: 12, num_heads: 12, mlp_ratio: 4.0, positional_embedding: sincos_2d, dropout: 0.0}
+objective: {type: flow, prediction: velocity, timesteps: 1000, schedule: cosine, source_std: 1.0, time_distribution: uniform}
+training:
+  epochs: 500
+  optimizer: adamw
+  lr: 0.0001
+  weight_decay: 0.01
+  precision: fp16
+  grad_clip: 1.0
+  ema_decay: 0.9999
+  save_every: 5
+  sample_every: 5
+  validate_every: 1
+  log_every: 10
+  validation_batches: null
+  gradient_accumulation_steps: 16
+  lr_schedule: cosine
+  warmup_epochs: 10
+  keep_epoch_checkpoints: 3
+sampling: {method: euler, steps: 50, num_samples: 8, seed: 123}
+logging: {wandb: true, project: dragn-benchmark}
+

@@ -142,6 +142,9 @@ def train_generative(
         else None
     )
     signature = experiment_signature(config, ae_hash)
+    data_manifest_hash = (
+        file_sha256(config.data.manifest) if config.data.manifest is not None else None
+    )
     checkpoints = CheckpointManager(output_dir, config.training.keep_epoch_checkpoints)
     resume = checkpoints.load_for_resume(config.experiment.resume, signature, device)
     start_epoch, global_step, best_validation = 1, 0, float("inf")
@@ -300,6 +303,7 @@ def train_generative(
             "schema_version": 2,
             "task": "base",
             "signature": signature,
+            "data_manifest_hash": data_manifest_hash,
             "objective": config.objective.model_dump(mode="json"),
             "ae_checkpoint_hash": ae_hash,
             "epoch": epoch,
