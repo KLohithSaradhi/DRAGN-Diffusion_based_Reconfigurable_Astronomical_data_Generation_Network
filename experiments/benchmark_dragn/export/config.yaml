@@ -14,4 +14,9 @@ variants:
   - {name: sdss_spiral, instrument: SDSS, class_name: spiral, checkpoint: ./results/benchmark_flow_spiral_sdss_full_lora/best.pt, weights: ema, scale: 1.0}
   - {name: subaru_lens, instrument: SUBARU, class_name: lens, checkpoint: ./results/benchmark_flow_lens_subaru_full_lora/best.pt, weights: ema, scale: 1.0}
   - {name: subaru_spiral, instrument: SUBARU, class_name: spiral, checkpoint: ./results/benchmark_flow_spiral_subaru_full_lora/best.pt, weights: ema, scale: 1.0}
-
+  - {name: sdss_ring, instrument: SDSS, class_name: ring, checkpoint: ./results/benchmark_flow_ring_sdss_full_lora/best.pt, weights: ema, scale: 1.0}
+  - {name: sdss_companion, instrument: SDSS, class_name: companion, checkpoint: ./results/benchmark_flow_companion_sdss_full_lora/best.pt, weights: ema, scale: 1.0}
+  - {name: sdss_smooth, instrument: SDSS, class_name: smooth, checkpoint: ./results/benchmark_flow_smooth_sdss_full_lora/best.pt, weights: ema, scale: 1.0}
+  - {name: subaru_ring, instrument: SUBARU, class_name: ring, checkpoint: ./results/benchmark_flow_ring_subaru_full_lora/best.pt, weights: ema, scale: 1.0}
+  - {name: subaru_companion, instrument: SUBARU, class_name: companion, checkpoint: ./results/benchmark_flow_companion_subaru_full_lora/best.pt, weights: ema, scale: 1.0}
+  - {name: subaru_smooth, instrument: SUBARU, class_name: smooth, checkpoint: ./results/benchmark_flow_smooth_subaru_full_lora/best.pt, weights: ema, scale: 1.0}

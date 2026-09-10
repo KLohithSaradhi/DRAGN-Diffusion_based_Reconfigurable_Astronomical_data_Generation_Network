@@ -18,7 +18,7 @@ python train.py --config path/to/config.yaml
 
 ## Classification benchmark
 
-The benchmark recognizes exactly two instruments (`SDSS`, `SUBARU`) and two objects (`lens`, `spiral`). It evaluates six experiments:
+The benchmark recognizes two instruments (`SDSS`, `SUBARU`) and five objects (`lens`, `spiral`, `ring`, `companion`, `smooth`). It evaluates six experiments:
 
 1. SDSS real images, object classification.
 2. SDSS real + DRAGN images, object classification.
@@ -47,9 +47,15 @@ ProcessedData/
   SDSS/
     lens/
     spiral/
+    ring/
+    companion/
+    smooth/
   SUBARU/
     lens/
     spiral/
+    ring/
+    companion/
+    smooth/
 ```
 
 The manifest is jointly stratified by instrument and object into 70% train, 15% validation, and 15% test. The benchmark DRAGN configurations consume only rows marked `train`.
@@ -61,13 +67,10 @@ Run these configurations in order:
 ```text
 experiments/benchmark_dragn/autoencoder/config.yaml
 experiments/benchmark_dragn/base_flow/config.yaml
-experiments/benchmark_dragn/lora_sdss_lens/config.yaml
-experiments/benchmark_dragn/lora_sdss_spiral/config.yaml
-experiments/benchmark_dragn/lora_subaru_lens/config.yaml
-experiments/benchmark_dragn/lora_subaru_spiral/config.yaml
+experiments/benchmark_dragn/lora_<instrument>_<object>/config.yaml
 ```
 
-The four LoRA jobs are independent after the base-flow checkpoint exists and can run in parallel. They all use the approved `full_lora` preset.
+The ten LoRA jobs—one for every instrument/object pair—are independent after the base-flow checkpoint exists and can run in parallel. They all use the approved `full_lora` preset.
 
 For Slurm, submit a stage from the benchmark experiment directory with:
 
@@ -77,13 +80,13 @@ sbatch --export=ALL,DRAGN_CONFIG=experiments/benchmark_dragn/autoencoder/config.
   run.sbatch
 ```
 
-After preparing the manifest, `submit_pipeline.sh` submits the complete dependency chain: AE, base, four parallel LoRAs, then synthetic export.
+After preparing the manifest, `submit_pipeline.sh` submits the complete dependency chain: AE, base, ten parallel LoRAs, then synthetic export.
 
 The supplied YAML files use the repository's existing cluster data path. Update `data.root_dir` if the dataset is elsewhere.
 
 ### 3. Export a balanced synthetic training set
 
-After all four adapters finish:
+After all ten adapters finish:
 
 ```bash
 python -m dragn.classification.export_synthetic \

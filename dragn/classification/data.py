@@ -16,7 +16,7 @@ from .config import ClassificationConfig
 
 
 INSTRUMENTS = ("SDSS", "SUBARU")
-OBJECTS = ("lens", "spiral")
+OBJECTS = ("lens", "spiral", "ring", "companion", "smooth")
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff"}
 
 
@@ -46,7 +46,7 @@ def discover_real_images(root: Path) -> list[ImageRecord]:
                 if path.suffix.lower() in IMAGE_EXTENSIONS:
                     records.append(ImageRecord(path.resolve(), instrument, class_name, "", "real"))
     if not records:
-        raise RuntimeError(f"No SDSS/SUBARU lens/spiral images found under {root}")
+        raise RuntimeError(f"No supported SDSS/SUBARU object images found under {root}")
     return records
 
 

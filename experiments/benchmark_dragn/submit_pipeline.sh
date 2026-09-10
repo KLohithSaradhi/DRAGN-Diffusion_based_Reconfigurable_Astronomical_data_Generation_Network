@@ -10,7 +10,9 @@ ae_job="$(sbatch --parsable --export=ALL,DRAGN_CONFIG=experiments/benchmark_drag
 base_job="$(sbatch --parsable --dependency="afterok:$ae_job" --export=ALL,DRAGN_CONFIG=experiments/benchmark_dragn/base_flow/config.yaml run.sbatch)"
 
 lora_jobs=()
-for stage in lora_sdss_lens lora_sdss_spiral lora_subaru_lens lora_subaru_spiral; do
+for stage in \
+  lora_sdss_lens lora_sdss_spiral lora_sdss_ring lora_sdss_companion lora_sdss_smooth \
+  lora_subaru_lens lora_subaru_spiral lora_subaru_ring lora_subaru_companion lora_subaru_smooth; do
   lora_jobs+=("$(sbatch --parsable --dependency="afterok:$base_job" --export="ALL,DRAGN_CONFIG=experiments/benchmark_dragn/$stage/config.yaml" run.sbatch)")
 done
 

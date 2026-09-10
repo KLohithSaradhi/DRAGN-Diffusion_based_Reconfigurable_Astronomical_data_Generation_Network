@@ -29,7 +29,7 @@ class StrictModel(BaseModel):
 class Variant(StrictModel):
     name: str = Field(min_length=1)
     instrument: Literal["SDSS", "SUBARU"]
-    class_name: Literal["lens", "spiral"]
+    class_name: Literal["lens", "spiral", "ring", "companion", "smooth"]
     checkpoint: Path
     weights: Literal["ema", "raw"] = "ema"
     scale: float = Field(default=1.0, ge=0)
@@ -47,7 +47,7 @@ class ExportConfig(StrictModel):
     ratio: float = Field(default=1.0, gt=0)
     batch_size: int = Field(default=16, gt=0)
     sampling: SamplingSection
-    variants: list[Variant] = Field(min_length=4, max_length=4)
+    variants: list[Variant] = Field(min_length=10, max_length=10)
 
 
 def _save_individual(images: torch.Tensor, directory: Path, start: int) -> list[Path]:

@@ -54,7 +54,7 @@ def _run_epoch(model, loader, criterion, device, precision, optimizer=None, scal
                 scaler.scale(loss).backward()
                 scaler.step(optimizer)
                 scaler.update()
-            probability = logits.softmax(dim=1)[:, 1]
+            probability = logits.softmax(dim=1)
             total_loss += loss.item() * labels.numel()
             targets.append(labels.detach().cpu())
             predictions.append(logits.argmax(dim=1).detach().cpu())
@@ -73,7 +73,7 @@ def train_classifier(config: ClassificationConfig) -> Path:
     output_dir = config.experiment.output_dir / config.experiment.name / f"seed_{config.experiment.seed}"
     output_dir.mkdir(parents=True, exist_ok=True)
     train_loader, validation_loader, test_loader = create_loaders(config)
-    model = build_classifier(config.model).to(device)
+    model = build_classifier(config.model, len(train_loader.dataset.classes)).to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.AdamW(model.parameters(), lr=config.training.lr,
                                   weight_decay=config.training.weight_decay)
@@ -145,11 +145,11 @@ def train_classifier(config: ClassificationConfig) -> Path:
             writer.writerow([name, *row])
     with (output_dir / "test_predictions.csv").open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle)
-        writer.writerow(["path", "target", "prediction", "positive_probability"])
+        writer.writerow(["path", "target", "prediction", *[f"probability_{name}" for name in class_names]])
         for record, target, prediction, probability in zip(
             test_loader.dataset.records, targets.tolist(), predictions.tolist(), probabilities.tolist()
         ):
-            writer.writerow([record.path, class_names[target], class_names[prediction], probability])
+            writer.writerow([record.path, class_names[target], class_names[prediction], *probability])
     if wandb_run is not None:
         wandb_run.log({f"test/{key}": value for key, value in test_metrics.items() if isinstance(value, (int, float))})
         wandb_run.finish()
