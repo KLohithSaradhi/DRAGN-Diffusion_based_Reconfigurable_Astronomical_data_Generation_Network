@@ -95,6 +95,15 @@ python -m dragn.classification.export_synthetic \
 
 This writes individual PNG files and `benchmark_data/synthetic/manifest.csv`. It generates one synthetic image per real training image within every instrument/object stratum. Export refuses checkpoints whose base, autoencoder, split-manifest hashes, architecture, objective, labels, or raw/EMA selection do not match.
 
+For an experiment-config-driven export, list the LoRA experiment YAMLs under `sources` and run:
+
+```bash
+python -m dragn.classification.generate_dataset \
+  --config experiments/data_generation/object_sdss_dragn.yaml
+```
+
+Each source label, autoencoder checkpoint, base checkpoint, and default adapter checkpoint is derived from its LoRA experiment YAML. A source can optionally override its checkpoint, weight variant, and adapter scale. The SDSS example writes five labeled folders and `benchmark_data/synthetic_sdss/manifest.csv`, which is consumed by the `object_sdss_dragn` classifier config.
+
 ### 4. Run all six classifier experiments
 
 Run three paired seeds locally:

@@ -19,7 +19,7 @@ from dragn.training.common import file_sha256
 from dragn.training.inference import _base_state, _read_checkpoint
 from dragn.training.train_generative import _generate, _load_autoencoder
 
-from .data import INSTRUMENTS, OBJECTS, read_manifest
+from .data import read_manifest
 
 
 class StrictModel(BaseModel):
@@ -30,6 +30,7 @@ class Variant(StrictModel):
     name: str = Field(min_length=1)
     instrument: Literal["SDSS", "SUBARU"]
     class_name: Literal["lens", "spiral", "ring", "companion", "smooth"]
+    experiment_config: Path | None = None
     checkpoint: Path
     weights: Literal["ema", "raw"] = "ema"
     scale: float = Field(default=1.0, ge=0)
@@ -47,7 +48,7 @@ class ExportConfig(StrictModel):
     ratio: float = Field(default=1.0, gt=0)
     batch_size: int = Field(default=16, gt=0)
     sampling: SamplingSection
-    variants: list[Variant] = Field(min_length=10, max_length=10)
+    variants: list[Variant] = Field(min_length=1)
 
 
 def _save_individual(images: torch.Tensor, directory: Path, start: int) -> list[Path]:
@@ -65,10 +66,9 @@ def _save_individual(images: torch.Tensor, directory: Path, start: int) -> list[
 
 
 def export_synthetic(config: ExportConfig) -> Path:
-    combinations = {(variant.instrument, variant.class_name) for variant in config.variants}
-    expected = {(instrument, class_name) for instrument in INSTRUMENTS for class_name in OBJECTS}
-    if combinations != expected:
-        raise ValueError(f"variants must cover each instrument/object combination exactly once: {sorted(expected)}")
+    combinations = [(variant.instrument, variant.class_name) for variant in config.variants]
+    if len(combinations) != len(set(combinations)):
+        raise ValueError("variants must contain unique instrument/object combinations")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     base_checkpoint, base_hash = _read_checkpoint(config.base_checkpoint, "base")
     base_config = ExperimentConfig.model_validate(base_checkpoint["config"])
@@ -148,8 +148,15 @@ def export_synthetic(config: ExportConfig) -> Path:
                 rows.append({"path": path, "instrument": variant.instrument,
                              "class_name": variant.class_name, "split": "train", "source": "synthetic"})
             generated += current
+        source_config_hash = (
+            file_sha256(variant.experiment_config)
+            if variant.experiment_config is not None and variant.experiment_config.is_file()
+            else None
+        )
         provenance["variants"].append({"name": variant.name, "instrument": variant.instrument,
                                        "class_name": variant.class_name, "samples": sample_count,
+                                       "experiment_config": str(variant.experiment_config) if variant.experiment_config else None,
+                                       "experiment_config_sha256": source_config_hash,
                                        "checkpoint": str(variant.checkpoint), "checkpoint_sha256": adapter_hash,
                                        "weights": variant.weights, "scale": variant.scale})
         del model

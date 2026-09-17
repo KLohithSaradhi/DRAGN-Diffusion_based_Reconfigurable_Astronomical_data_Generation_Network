@@ -4,7 +4,7 @@ target: object
 experiment: {name: object_sdss_dragn, output_dir: ./results/classification, seed: 42}
 data:
   manifest: ./benchmark_data/real_splits.csv
-  synthetic_manifest: ./benchmark_data/synthetic/manifest.csv
+  synthetic_manifest: ./benchmark_data/synthetic_sdss/manifest.csv
   instrument_filter: SDSS
   image_size: 224
   batch_size: 32

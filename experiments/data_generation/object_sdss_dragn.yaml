@@ -1,0 +1,31 @@
+schema_version: 1
+task: generate_classification_data
+
+real_manifest: ./benchmark_data/real_splits.csv
+output_dir: ./benchmark_data/synthetic_sdss/images
+manifest: ./benchmark_data/synthetic_sdss/manifest.csv
+ratio: 1.0
+batch_size: 16
+
+sampling:
+  method: euler
+  steps: 50
+  num_samples: 16
+  seed: 123
+
+sources:
+  - experiment_config: ./experiments/production_flow_lens_sdss_mlp_lora/config.yaml
+    weights: ema
+    scale: 1.0
+  - experiment_config: ./experiments/production_flow_lens_sdss_mlp_lora/config.yaml
+    weights: ema
+    scale: 1.0
+  - experiment_config: ./experiments/production_flow_lens_sdss_mlp_lora/config.yaml
+    weights: ema
+    scale: 1.0
+  - experiment_config: ./experiments/production_flow_lens_sdss_mlp_lora/config.yaml
+    weights: ema
+    scale: 1.0
+  - experiment_config: ./experiments/production_flow_lens_sdss_mlp_lora/config.yaml
+    weights: ema
+    scale: 1.0
