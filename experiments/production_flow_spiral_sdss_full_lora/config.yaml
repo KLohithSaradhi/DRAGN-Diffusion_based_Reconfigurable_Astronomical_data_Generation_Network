@@ -5,7 +5,7 @@ experiment:
   name: production_flow_spiral_sdss_full_lora
   output_dir: ./results
   seed: 42
-  resume: auto
+  resume: never
 
 data:
   dataset: astro
@@ -17,6 +17,9 @@ data:
   batch_size: 2
   num_workers: 8
   validation_fraction: 0.1
+  manifest: ./benchmark_data/real_splits.csv
+  manifest_split: train
+  leakage_safe: true
   filter:
     instrument: SDSS
     class_name: spiral
@@ -91,4 +94,3 @@ sampling:
 logging:
   wandb: true
   project: dragn-dit
-

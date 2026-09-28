@@ -86,27 +86,26 @@ python -m dragn.classification.audit_leakage \
   --real-manifest benchmark_data/real_splits.csv
 ```
 
-### 2. Train leakage-safe DRAGN models
+### 2. Train leakage-safe production DRAGN models
 
-Run these configurations in order:
+The canonical production chain is:
 
 ```text
-experiments/benchmark_dragn/autoencoder/config.yaml
-experiments/benchmark_dragn/base_flow/config.yaml
-experiments/benchmark_dragn/lora_<instrument>_<object>/config.yaml
+experiments/production_ae/config.yaml
+experiments/production_flow/config.yaml
+experiments/production_flow_<object>_<instrument>_full_lora/config.yaml
 ```
 
-The ten LoRA jobs—one for every instrument/object pair—are independent after the base-flow checkpoint exists and can run in parallel. They all use the approved `full_lora` preset.
+The ten full-LoRA jobs—one for every instrument/object pair—are independent after the base-flow checkpoint exists and can run in parallel. Existing projection/MLP ablation configs are also leakage-safe.
 
-For Slurm, submit a stage from the benchmark experiment directory with:
+For Slurm, submit the complete production dependency chain from the experiments directory:
 
 ```bash
-cd experiments/benchmark_dragn
-sbatch --export=ALL,DRAGN_CONFIG=experiments/benchmark_dragn/autoencoder/config.yaml \
-  run.sbatch
+cd experiments
+./submit_production_pipeline.sh
 ```
 
-After preparing the manifest, `submit_pipeline.sh` submits the complete dependency chain: AE, base, ten parallel LoRAs, then synthetic export.
+This submits a fresh AE, a fresh flow backbone, every production LoRA config in parallel, and finally the combined synthetic export. Production configs use `resume: never` to prevent reuse of pre-split checkpoints.
 
 The supplied YAML files use the repository's existing cluster data path. Update `data.root_dir` if the dataset is elsewhere.
 
@@ -115,8 +114,8 @@ The supplied YAML files use the repository's existing cluster data path. Update 
 After all ten adapters finish:
 
 ```bash
-python -m dragn.classification.export_synthetic \
-  --config experiments/benchmark_dragn/export/config.yaml
+python -m dragn.classification.generate_dataset \
+  --config experiments/data_generation/all_production_dragn.yaml
 ```
 
 This writes individual PNG files and `benchmark_data/synthetic/manifest.csv`. It generates one synthetic image per real training image within every instrument/object stratum. Export refuses checkpoints whose base, autoencoder, split-manifest hashes, architecture, objective, labels, or raw/EMA selection do not match.
@@ -128,7 +127,7 @@ python -m dragn.classification.generate_dataset \
   --config experiments/data_generation/object_sdss_dragn.yaml
 ```
 
-Each source label, autoencoder checkpoint, base checkpoint, and default adapter checkpoint is derived from its LoRA experiment YAML. A source can optionally override its checkpoint, weight variant, and adapter scale. The SDSS example writes five labeled folders and `benchmark_data/synthetic_sdss/manifest.csv`, which is consumed by the `object_sdss_dragn` classifier config.
+Each source label, autoencoder checkpoint, base checkpoint, and default adapter checkpoint is derived from its LoRA experiment YAML. A source can optionally override its checkpoint, weight variant, and adapter scale. The canonical classifier configs consume the combined `benchmark_data/synthetic/manifest.csv`; `object_sdss_dragn.yaml` remains available when generating an SDSS-only dataset for a standalone run.
 
 Audit the real split, generated data, and provenance together:
 

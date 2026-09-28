@@ -2,7 +2,7 @@ schema_version: 2
 task: lora
 
 experiment:
-  name: production_flow_lens_sdss_full_lora
+  name: production_flow_spiral_subaru_full_lora
   output_dir: ./results
   seed: 42
   resume: never
@@ -21,8 +21,8 @@ data:
   manifest_split: train
   leakage_safe: true
   filter:
-    instrument: SDSS
-    class_name: lens
+    instrument: SUBARU
+    class_name: spiral
 
 autoencoder:
   enabled: true
@@ -94,3 +94,4 @@ sampling:
 logging:
   wandb: true
   project: dragn-dit
+
