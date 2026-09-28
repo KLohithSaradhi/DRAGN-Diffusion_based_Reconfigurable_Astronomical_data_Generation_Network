@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import csv
-import random
+import hashlib
+import json
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -11,6 +12,13 @@ import torch
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
+
+from dragn.manifest import (
+    file_sha256,
+    normalized_pixel_sha256,
+    validate_real_manifest,
+    validate_synthetic_manifest,
+)
 
 from .config import ClassificationConfig
 
@@ -27,6 +35,9 @@ class ImageRecord:
     class_name: str
     split: str
     source: str
+    group_id: str = ""
+    content_sha256: str = ""
+    pixel_sha256: str = ""
 
 
 def discover_real_images(root: Path) -> list[ImageRecord]:
@@ -56,32 +67,129 @@ def write_split_manifest(
     seed: int = 42,
     validation_fraction: float = 0.15,
     test_fraction: float = 0.15,
+    group_map: Path | None = None,
+    group_id_mode: str = "stem",
 ) -> Path:
     if validation_fraction <= 0 or test_fraction <= 0 or validation_fraction + test_fraction >= 1:
         raise ValueError("validation and test fractions must be positive and sum to less than one")
-    grouped: dict[tuple[str, str], list[ImageRecord]] = {}
-    for record in discover_real_images(root):
-        grouped.setdefault((record.instrument, record.class_name), []).append(record)
-    rows: list[ImageRecord] = []
-    for group_index, (key, records) in enumerate(sorted(grouped.items())):
-        random.Random(seed + group_index).shuffle(records)
-        count = len(records)
-        if count < 3:
-            raise RuntimeError(f"Stratum {key} needs at least three images, found {count}")
-        validation_count = max(1, round(count * validation_fraction))
-        test_count = max(1, round(count * test_fraction))
-        if validation_count + test_count >= count:
-            validation_count = test_count = 1
+    if group_id_mode not in {"stem", "path"}:
+        raise ValueError("group_id_mode must be 'stem' or 'path'")
+    records = discover_real_images(root)
+    supplied_groups: dict[str, str] = {}
+    if group_map is not None:
+        with group_map.expanduser().open("r", encoding="utf-8", newline="") as handle:
+            for row in csv.DictReader(handle):
+                supplied_path = Path(row["path"]).expanduser()
+                if not supplied_path.is_absolute():
+                    supplied_path = group_map.parent / supplied_path
+                supplied_groups[str(supplied_path.resolve())] = row["group_id"]
+    parents = list(range(len(records)))
+
+    def find(index: int) -> int:
+        while parents[index] != index:
+            parents[index] = parents[parents[index]]
+            index = parents[index]
+        return index
+
+    def union(left: int, right: int) -> None:
+        left_root, right_root = find(left), find(right)
+        if left_root != right_root:
+            parents[right_root] = left_root
+
+    group_owner: dict[str, int] = {}
+    content_owner: dict[str, int] = {}
+    pixel_owner: dict[str, int] = {}
+    metadata = []
+    for index, record in enumerate(records):
+        resolved = str(record.path.resolve())
+        if group_map is not None:
+            if resolved not in supplied_groups:
+                raise ValueError(f"Group map has no group_id for {resolved}")
+            preliminary_group = supplied_groups[resolved]
+        elif group_id_mode == "stem":
+            preliminary_group = record.path.stem
+        else:
+            preliminary_group = str(record.path.resolve())
+        content_hash = file_sha256(record.path)
+        pixel_hash = normalized_pixel_sha256(record.path)
+        for key, owners in (
+            (preliminary_group, group_owner),
+            (content_hash, content_owner),
+            (pixel_hash, pixel_owner),
+        ):
+            if key in owners:
+                union(index, owners[key])
+            else:
+                owners[key] = index
+        metadata.append((preliminary_group, content_hash, pixel_hash))
+
+    members: dict[int, list[int]] = {}
+    for index in range(len(records)):
+        members.setdefault(find(index), []).append(index)
+    stable_group_ids = {}
+    for root_index, indices in members.items():
+        labels = sorted({metadata[index][0] for index in indices})
+        stable_group_ids[root_index] = hashlib.sha256(
+            "\n".join(labels).encode("utf-8")
+        ).hexdigest()[:24]
+
+    strata = sorted({(record.instrument, record.class_name) for record in records})
+    target_counts = {}
+    for stratum in strata:
+        count = sum((record.instrument, record.class_name) == stratum for record in records)
+        target_counts[stratum] = {
+            "test": max(1, round(count * test_fraction)),
+            "validation": max(1, round(count * validation_fraction)),
+        }
+    best_assignment = None
+    best_score = float("inf")
+    for attempt in range(512):
+        assignment = {}
+        for root_index, group_id in stable_group_ids.items():
+            digest = hashlib.sha256(
+                f"{seed}:{attempt}:{group_id}".encode("utf-8")
+            ).digest()
+            value = int.from_bytes(digest[:8], "big") / 2**64
+            assignment[root_index] = (
+                "test" if value < test_fraction
+                else "validation" if value < test_fraction + validation_fraction
+                else "train"
+            )
+        counts = {(stratum, split): 0 for stratum in strata for split in ("train", "validation", "test")}
         for index, record in enumerate(records):
-            split = "test" if index < test_count else "validation" if index < test_count + validation_count else "train"
-            rows.append(ImageRecord(record.path, record.instrument, record.class_name, split, "real"))
+            counts[((record.instrument, record.class_name), assignment[find(index)])] += 1
+        if any(counts[(stratum, split)] == 0 for stratum in strata for split in ("train", "validation", "test")):
+            continue
+        score = sum(
+            abs(counts[(stratum, split)] - target_counts[stratum][split])
+            for stratum in strata for split in ("test", "validation")
+        )
+        if score < best_score:
+            best_assignment, best_score = assignment, score
+    if best_assignment is None:
+        raise RuntimeError(
+            "Could not create non-empty group-isolated train/validation/test partitions; "
+            "provide more independent groups or a corrected group map"
+        )
+    rows = []
+    for index, record in enumerate(records):
+        preliminary_group, content_hash, pixel_hash = metadata[index]
+        rows.append(ImageRecord(
+            record.path, record.instrument, record.class_name,
+            best_assignment[find(index)], "real", stable_group_ids[find(index)],
+            content_hash, pixel_hash,
+        ))
     output = output.expanduser()
     output.parent.mkdir(parents=True, exist_ok=True)
     with output.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=["path", "instrument", "class_name", "split", "source"])
+        writer = csv.DictWriter(handle, fieldnames=[
+            "path", "instrument", "class_name", "split", "source",
+            "group_id", "content_sha256", "pixel_sha256",
+        ])
         writer.writeheader()
         for row in sorted(rows, key=lambda value: str(value.path)):
             writer.writerow(row.__dict__)
+    validate_real_manifest(output)
     return output
 
 
@@ -98,6 +206,7 @@ def read_manifest(path: Path, source_default: str) -> list[ImageRecord]:
             records.append(ImageRecord(
                 image_path, row["instrument"].upper(), row["class_name"].lower(),
                 row.get("split", "train"), row.get("source", source_default),
+                row.get("group_id", ""), row.get("content_sha256", ""), row.get("pixel_sha256", ""),
             ))
     return records
 
@@ -137,17 +246,64 @@ def _transforms(image_size: int, augment: bool):
 
 
 def create_loaders(config: ClassificationConfig):
+    validate_real_manifest(config.data.manifest)
     real = read_manifest(config.data.manifest, "real")
     if config.data.instrument_filter:
         real = [row for row in real if row.instrument == config.data.instrument_filter]
     by_split = {split: [row for row in real if row.split == split] for split in ("train", "validation", "test")}
+    expected_labels = set(OBJECTS if config.target == "object" else INSTRUMENTS)
+    for split, records in by_split.items():
+        observed_labels = {
+            row.class_name if config.target == "object" else row.instrument
+            for row in records
+        }
+        if observed_labels != expected_labels:
+            raise RuntimeError(
+                f"Real {split} split labels do not match the benchmark; "
+                f"expected={sorted(expected_labels)}, observed={sorted(observed_labels)}"
+            )
     if config.data.synthetic_manifest is not None:
+        validate_synthetic_manifest(config.data.synthetic_manifest)
+        if config.data.require_synthetic_provenance:
+            provenance_path = config.data.synthetic_manifest.parent / "synthetic_provenance.json"
+            if not provenance_path.is_file():
+                raise FileNotFoundError(
+                    f"Leakage-safe augmented training requires provenance: {provenance_path}"
+                )
+            provenance = json.loads(provenance_path.read_text(encoding="utf-8"))
+            expected_real_hash = file_sha256(config.data.manifest)
+            expected_synthetic_hash = file_sha256(config.data.synthetic_manifest)
+            if provenance.get("real_manifest_sha256") != expected_real_hash:
+                raise ValueError("Synthetic data provenance references a different real split manifest")
+            if provenance.get("synthetic_manifest_sha256") != expected_synthetic_hash:
+                raise ValueError("Synthetic manifest has changed since its provenance was recorded")
+            if not provenance.get("variants") or any(
+                not variant.get("checkpoint_sha256") for variant in provenance["variants"]
+            ):
+                raise ValueError("Synthetic provenance is missing generator checkpoint hashes")
         synthetic = read_manifest(config.data.synthetic_manifest, "synthetic")
         if config.data.instrument_filter:
             synthetic = [row for row in synthetic if row.instrument == config.data.instrument_filter]
         synthetic = [row for row in synthetic if row.split == "train"]
+        held_out_content = {
+            row.content_sha256 for row in real if row.split != "train"
+        }
+        held_out_pixels = {
+            row.pixel_sha256 for row in real if row.split != "train"
+        }
+        for row in synthetic:
+            if file_sha256(row.path) in held_out_content:
+                raise ValueError(f"Synthetic image duplicates held-out real file content: {row.path}")
+            if normalized_pixel_sha256(row.path) in held_out_pixels:
+                raise ValueError(f"Synthetic image duplicates held-out normalized pixels: {row.path}")
         real_training = by_split["train"]
         strata = {(row.instrument, row.class_name) for row in real_training}
+        synthetic_strata = {(row.instrument, row.class_name) for row in synthetic}
+        if synthetic_strata != strata:
+            raise RuntimeError(
+                f"Synthetic strata do not match real training strata; "
+                f"expected={sorted(strata)}, observed={sorted(synthetic_strata)}"
+            )
         for stratum in strata:
             real_count = sum((row.instrument, row.class_name) == stratum for row in real_training)
             synthetic_count = sum((row.instrument, row.class_name) == stratum for row in synthetic)

@@ -22,6 +22,7 @@ class ExperimentSection(StrictModel):
 class ClassificationDataSection(StrictModel):
     manifest: Path
     synthetic_manifest: Path | None = None
+    require_synthetic_provenance: bool = True
     instrument_filter: Literal["SDSS", "SUBARU"] | None = None
     image_size: int = Field(default=224, gt=0)
     batch_size: int = Field(default=32, gt=0)

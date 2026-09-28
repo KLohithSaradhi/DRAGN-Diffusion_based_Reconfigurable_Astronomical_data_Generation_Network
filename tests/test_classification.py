@@ -10,6 +10,7 @@ from PIL import Image
 from dragn.classification.config import ClassificationConfig
 from dragn.classification.data import read_manifest, write_split_manifest
 from dragn.classification.metrics import classification_metrics
+from dragn.manifest import validate_real_manifest
 
 
 class ClassificationBenchmarkTests(unittest.TestCase):
@@ -30,6 +31,32 @@ class ClassificationBenchmarkTests(unittest.TestCase):
             self.assertEqual(len(rows), 100)
             self.assertEqual({row.split for row in rows}, {"train", "validation", "test"})
             self.assertEqual(len({row.path for row in rows}), len(rows))
+            group_splits = {}
+            for row in rows:
+                group_splits.setdefault(row.group_id, set()).add(row.split)
+                self.assertTrue(row.content_sha256)
+                self.assertTrue(row.pixel_sha256)
+            self.assertTrue(all(len(splits) == 1 for splits in group_splits.values()))
+            validate_real_manifest(first)
+
+    def test_manifest_validator_rejects_group_leakage(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            manifest = Path(temporary_directory) / "split.csv"
+            fields = [
+                "path", "instrument", "class_name", "split", "source",
+                "group_id", "content_sha256", "pixel_sha256",
+            ]
+            with manifest.open("w", newline="", encoding="utf-8") as handle:
+                writer = csv.DictWriter(handle, fieldnames=fields)
+                writer.writeheader()
+                writer.writerow(dict(path="a.png", instrument="SDSS", class_name="lens",
+                                     split="train", source="real", group_id="same",
+                                     content_sha256="one", pixel_sha256="pixel-one"))
+                writer.writerow(dict(path="b.png", instrument="SUBARU", class_name="lens",
+                                     split="test", source="real", group_id="same",
+                                     content_sha256="two", pixel_sha256="pixel-two"))
+            with self.assertRaisesRegex(ValueError, "Leakage detected"):
+                validate_real_manifest(manifest)
 
     def test_task_scope_validation(self):
         payload = {

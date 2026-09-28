@@ -13,6 +13,7 @@ from torch import Tensor
 from torch.utils.data import DataLoader, Dataset, Subset
 
 from dragn.config import DataSection
+from dragn.manifest import validate_real_manifest
 
 
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff"}
@@ -38,6 +39,8 @@ class ImageDataset(Dataset[tuple[Tensor, dict[str, str]]]):
             manifest = self.config.manifest.expanduser()
             if not manifest.is_file():
                 raise FileNotFoundError(f"Dataset manifest does not exist: {manifest}")
+            if self.config.leakage_safe:
+                validate_real_manifest(manifest)
             with manifest.open("r", encoding="utf-8", newline="") as handle:
                 for row in csv.DictReader(handle):
                     if row.get("split") != self.config.manifest_split:

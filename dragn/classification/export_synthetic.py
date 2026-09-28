@@ -74,6 +74,8 @@ def export_synthetic(config: ExportConfig) -> Path:
     base_config = ExperimentConfig.model_validate(base_checkpoint["config"])
     if base_config.model is None or base_config.objective is None:
         raise ValueError("Base checkpoint has no generative model configuration")
+    if not base_config.data.leakage_safe or base_config.data.manifest_split != "train":
+        raise ValueError("Base checkpoint was not trained in leakage-safe mode")
     expected_sampler = "ancestral" if base_config.objective.type == "ddpm" else "euler"
     if config.sampling.method != expected_sampler:
         raise ValueError(f"Base objective requires sampling method {expected_sampler}")
@@ -88,6 +90,9 @@ def export_synthetic(config: ExportConfig) -> Path:
     if base_checkpoint.get("data_manifest_hash") != real_manifest_hash:
         raise ValueError("Base checkpoint was not trained from the selected real split manifest")
     ae_checkpoint, _ = _read_checkpoint(config.autoencoder_checkpoint, "autoencoder")
+    ae_config = ExperimentConfig.model_validate(ae_checkpoint["config"])
+    if not ae_config.data.leakage_safe or ae_config.data.manifest_split != "train":
+        raise ValueError("Autoencoder checkpoint was not trained in leakage-safe mode")
     if ae_checkpoint.get("data_manifest_hash") != real_manifest_hash:
         raise ValueError("Autoencoder was not trained from the selected real split manifest")
     if base_config.data.manifest_split != "train":
@@ -98,6 +103,8 @@ def export_synthetic(config: ExportConfig) -> Path:
     rows = []
     provenance = {"base_checkpoint": str(config.base_checkpoint), "base_sha256": base_hash,
                   "autoencoder_checkpoint": str(config.autoencoder_checkpoint), "autoencoder_sha256": ae_hash,
+                  "real_manifest": str(config.real_manifest),
+                  "real_manifest_sha256": real_manifest_hash,
                   "ratio": config.ratio, "variants": []}
     for variant_index, variant in enumerate(config.variants):
         real_count = sum(
@@ -111,6 +118,8 @@ def export_synthetic(config: ExportConfig) -> Path:
         adapter_config = ExperimentConfig.model_validate(adapter_checkpoint["config"])
         if adapter_config.lora is None or adapter_config.data.filter is None:
             raise ValueError(f"Invalid LoRA checkpoint: {variant.checkpoint}")
+        if not adapter_config.data.leakage_safe or adapter_config.data.manifest_split != "train":
+            raise ValueError(f"Adapter {variant.name} was not trained in leakage-safe mode")
         if (adapter_config.data.filter.instrument.upper(), adapter_config.data.filter.class_name.lower()) != (
             variant.instrument, variant.class_name
         ):
@@ -167,6 +176,8 @@ def export_synthetic(config: ExportConfig) -> Path:
         writer = csv.DictWriter(handle, fieldnames=["path", "instrument", "class_name", "split", "source"])
         writer.writeheader()
         writer.writerows(rows)
+    provenance["synthetic_manifest"] = str(config.manifest)
+    provenance["synthetic_manifest_sha256"] = file_sha256(config.manifest)
     (config.manifest.parent / "synthetic_provenance.json").write_text(
         json.dumps(provenance, indent=2), encoding="utf-8"
     )

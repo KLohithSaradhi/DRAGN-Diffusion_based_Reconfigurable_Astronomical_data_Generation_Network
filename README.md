@@ -33,10 +33,29 @@ Every paired real/augmented experiment uses the same real split and classifier s
 
 Do this once, before training DRAGN or a classifier:
 
+Manifests created by older revisions are intentionally rejected because they lack group and content hashes. Regenerate the manifest and retrain all benchmark checkpoints after adopting this workflow.
+
 ```bash
 python -m dragn.classification.prepare_splits \
   --root /path/to/ProcessedData \
   --output benchmark_data/real_splits.csv \
+  --group-id-mode stem \
+  --seed 42
+```
+
+By default, images with the same filename stem are treated as observations of the same physical object and remain in one split. Exact file duplicates and identical normalized pixels are also merged automatically. If filenames are not stable physical-object identifiers, provide an authoritative mapping:
+
+```csv
+path,group_id
+/path/to/ProcessedData/SDSS/lens/cutout_1.png,catalogue-object-123
+/path/to/ProcessedData/SUBARU/lens/cutout_9.png,catalogue-object-123
+```
+
+```bash
+python -m dragn.classification.prepare_splits \
+  --root /path/to/ProcessedData \
+  --output benchmark_data/real_splits.csv \
+  --group-map /path/to/object_groups.csv \
   --seed 42
 ```
 
@@ -58,7 +77,14 @@ ProcessedData/
     smooth/
 ```
 
-The manifest is jointly stratified by instrument and object into 70% train, 15% validation, and 15% test. The benchmark DRAGN configurations consume only rows marked `train`.
+The manifest approximates a joint 70% train, 15% validation, and 15% test split while keeping every physical-object and duplicate group intact. The benchmark DRAGN configurations consume only rows marked `train` and have `leakage_safe: true`, so malformed or non-grouped manifests are rejected.
+
+Audit the real split before training:
+
+```bash
+python -m dragn.classification.audit_leakage \
+  --real-manifest benchmark_data/real_splits.csv
+```
 
 ### 2. Train leakage-safe DRAGN models
 
@@ -103,6 +129,16 @@ python -m dragn.classification.generate_dataset \
 ```
 
 Each source label, autoencoder checkpoint, base checkpoint, and default adapter checkpoint is derived from its LoRA experiment YAML. A source can optionally override its checkpoint, weight variant, and adapter scale. The SDSS example writes five labeled folders and `benchmark_data/synthetic_sdss/manifest.csv`, which is consumed by the `object_sdss_dragn` classifier config.
+
+Audit the real split, generated data, and provenance together:
+
+```bash
+python -m dragn.classification.audit_leakage \
+  --real-manifest benchmark_data/real_splits.csv \
+  --synthetic-manifest benchmark_data/synthetic_sdss/manifest.csv
+```
+
+Augmented classifier training fails if this provenance is absent, references a different real manifest, has a modified synthetic manifest, or lacks generator checkpoint hashes.
 
 ### 4. Run all six classifier experiments
 

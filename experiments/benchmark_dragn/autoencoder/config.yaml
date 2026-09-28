@@ -13,6 +13,7 @@ data:
   validation_fraction: 0.1
   manifest: ./benchmark_data/real_splits.csv
   manifest_split: train
+  leakage_safe: true
 autoencoder:
   enabled: true
   architecture: autoencoder_kl
@@ -40,4 +41,3 @@ training:
   warmup_epochs: 5
   keep_epoch_checkpoints: 3
 logging: {wandb: true, project: dragn-benchmark}
-

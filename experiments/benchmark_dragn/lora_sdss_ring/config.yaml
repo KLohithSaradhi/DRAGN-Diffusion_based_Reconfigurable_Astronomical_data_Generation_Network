@@ -13,6 +13,7 @@ data:
   validation_fraction: 0.1
   manifest: ./benchmark_data/real_splits.csv
   manifest_split: train
+  leakage_safe: true
   filter: {instrument: SDSS, class_name: ring}
 autoencoder:
   enabled: true
@@ -54,4 +55,3 @@ training:
   keep_epoch_checkpoints: 3
 sampling: {method: euler, steps: 50, num_samples: 8, seed: 123}
 logging: {wandb: true, project: dragn-benchmark}
-

@@ -38,11 +38,14 @@ class DataSection(StrictModel):
     filter: DataFilter | None = None
     manifest: Path | None = None
     manifest_split: Literal["train", "validation", "test"] | None = None
+    leakage_safe: bool = False
 
     @model_validator(mode="after")
     def validate_manifest_selection(self) -> "DataSection":
         if (self.manifest is None) != (self.manifest_split is None):
             raise ValueError("data.manifest and data.manifest_split must be specified together")
+        if self.leakage_safe and (self.manifest is None or self.manifest_split != "train"):
+            raise ValueError("data.leakage_safe requires a manifest with manifest_split: train")
         return self
 
 
